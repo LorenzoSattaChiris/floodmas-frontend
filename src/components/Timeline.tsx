@@ -7,6 +7,7 @@ import {
   type HistoricFloodEvent,
 } from '../data/floodHistory';
 import { MAP_INITIAL_VIEW } from '../config/layers';
+import { Tip } from './Tip';
 
 const YEARS = getUniqueYears();
 const YEAR_MIN = YEARS[0];
@@ -14,10 +15,10 @@ const YEAR_MAX = YEARS[YEARS.length - 1];
 
 /** Speed presets in ms per event */
 const SPEEDS = [
-  { label: '0.5×', ms: 6000 },
-  { label: '1×', ms: 3500 },
-  { label: '2×', ms: 2000 },
-  { label: '4×', ms: 1000 },
+  { label: '0.5×', ms: 6000, tip: 'Slow speed — 6 seconds per event' },
+  { label: '1×',   ms: 3500, tip: 'Normal speed — 3.5 seconds per event' },
+  { label: '2×',   ms: 2000, tip: 'Fast speed — 2 seconds per event' },
+  { label: '4×',   ms: 1000, tip: 'Fastest speed — 1 second per event' },
 ];
 
 const SEVERITY_COLORS: Record<number, string> = { 1: '#ef4444', 2: '#f97316', 3: '#eab308' };
@@ -360,15 +361,17 @@ export default function Timeline() {
   // ─── Toggle button when closed ────────────────────────────────────
   if (!open) {
     return (
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
-        <button
-          onClick={() => setOpen(true)}
-          className="timeline-toggle group"
-        >
-          <span className="timeline-toggle-icon">&#9654;</span>
-          <span className="timeline-toggle-text">Flood History</span>
-          <span className="timeline-toggle-years">{YEAR_MIN} — {YEAR_MAX}</span>
-        </button>
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto" data-tour="timeline">
+        <Tip text="Explore 70+ years of major UK flood events visualised on the map" side="top">
+          <button
+            onClick={() => setOpen(true)}
+            className="timeline-toggle group"
+          >
+            <span className="timeline-toggle-icon">&#9654;</span>
+            <span className="timeline-toggle-text">Flood History</span>
+            <span className="timeline-toggle-years">{YEAR_MIN} — {YEAR_MAX}</span>
+          </button>
+        </Tip>
       </div>
     );
   }
@@ -380,19 +383,20 @@ export default function Timeline() {
 
   // ─── Full timeline UI ─────────────────────────────────────────────
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-30 pointer-events-auto timeline-panel">
+    <div className="absolute bottom-0 left-0 right-0 z-30 pointer-events-auto timeline-panel" data-tour="timeline">
       {/* Cinematic gradient backdrop */}
       <div className="timeline-backdrop" />
 
       <div className="relative px-6 pt-3 pb-4 max-w-screen-xl mx-auto">
         {/* Close button */}
-        <button
-          onClick={() => setOpen(false)}
-          className="absolute top-2 right-4 text-white/40 hover:text-white/80 transition-colors text-sm"
-          title="Close timeline"
-        >
-          ✕
-        </button>
+        <Tip text="Close timeline and return to live map view" side="left">
+          <button
+            onClick={() => setOpen(false)}
+            className="absolute top-2 right-4 text-white/40 hover:text-white/80 transition-colors text-sm"
+          >
+            ✕
+          </button>
+        </Tip>
 
         {/* ─── Intro Band ─── */}
         {phase === 'intro' && (
@@ -471,12 +475,14 @@ export default function Timeline() {
                   {currentEvent.affected.length > 0 && ` · ${currentEvent.affected.length} areas`}
                 </p>
               </div>
-              <button
-                onClick={() => setShowInfo(false)}
-                className="text-white/30 hover:text-white/60 text-xs shrink-0"
-              >
-                Hide info
-              </button>
+              <Tip text="Collapse the current event description" side="top">
+                <button
+                  onClick={() => setShowInfo(false)}
+                  className="text-white/30 hover:text-white/60 text-xs shrink-0"
+                >
+                  Hide info
+                </button>
+              </Tip>
             </div>
             <p className="text-[11px] text-white/60 mt-1.5 leading-relaxed line-clamp-2">
               {currentEvent.description}
@@ -485,12 +491,14 @@ export default function Timeline() {
           </div>
         )}
         {(phase === 'playing' || phase === 'idle') && !showInfo && (
+        <Tip text="Show current flood event details" side="top">
           <button
             onClick={() => setShowInfo(true)}
             className="text-[9px] text-white/30 hover:text-white/50 mb-2"
           >
             Show info
           </button>
+        </Tip>
         )}
 
         {/* ─── Progress Track ─── */}
@@ -550,40 +558,44 @@ export default function Timeline() {
           {/* Left: Playback */}
           <div className="flex items-center gap-2">
             {/* Skip backward */}
-            <button
-              onClick={() => { setEventIndex(Math.max(0, eventIndex - 1)); setPlaying(false); }}
-              disabled={eventIndex === 0}
-              className="timeline-btn"
-              title="Previous event"
-            >
-              ⏮
-            </button>
+            <Tip text="Go to previous flood event" side="top">
+              <button
+                onClick={() => { setEventIndex(Math.max(0, eventIndex - 1)); setPlaying(false); }}
+                disabled={eventIndex === 0}
+                className="timeline-btn"
+              >
+                ⏮
+              </button>
+            </Tip>
 
             {/* Play / Pause */}
-            <button
-              onClick={() => {
-                if (phase === 'intro' || phase === 'outro') return;
-                if (eventIndex >= UK_FLOOD_HISTORY.length - 1 || phase === 'idle') {
-                  startIntro();
-                } else {
-                  setPlaying(!playing);
-                }
-              }}
-              className="timeline-play-btn"
-              disabled={phase === 'intro' || phase === 'outro'}
-            >
-              {playing || phase === 'intro' ? '⏸' : '▶'}
-            </button>
+            <Tip text={playing || phase === 'intro' ? 'Pause playback' : eventIndex >= UK_FLOOD_HISTORY.length - 1 ? 'Restart from the beginning' : 'Start playback from this event'} side="top">
+              <button
+                onClick={() => {
+                  if (phase === 'intro' || phase === 'outro') return;
+                  if (eventIndex >= UK_FLOOD_HISTORY.length - 1 || phase === 'idle') {
+                    startIntro();
+                  } else {
+                    setPlaying(!playing);
+                  }
+                }}
+                className="timeline-play-btn"
+                disabled={phase === 'intro' || phase === 'outro'}
+              >
+                {playing || phase === 'intro' ? '⏸' : '▶'}
+              </button>
+            </Tip>
 
             {/* Skip forward */}
-            <button
-              onClick={() => { setEventIndex(Math.min(UK_FLOOD_HISTORY.length - 1, eventIndex + 1)); setPlaying(false); }}
-              disabled={eventIndex >= UK_FLOOD_HISTORY.length - 1}
-              className="timeline-btn"
-              title="Next event"
-            >
-              ⏭
-            </button>
+            <Tip text="Go to next flood event" side="top">
+              <button
+                onClick={() => { setEventIndex(Math.min(UK_FLOOD_HISTORY.length - 1, eventIndex + 1)); setPlaying(false); }}
+                disabled={eventIndex >= UK_FLOOD_HISTORY.length - 1}
+                className="timeline-btn"
+              >
+                ⏭
+              </button>
+            </Tip>
           </div>
 
           {/* Center: Counter */}
@@ -596,17 +608,18 @@ export default function Timeline() {
           {/* Right: Speed */}
           <div className="flex items-center gap-1">
             {SPEEDS.map((s, i) => (
-              <button
-                key={s.label}
-                onClick={() => setSpeedIdx(i)}
-                className={`text-[9px] px-1.5 py-0.5 rounded transition-all ${
-                  i === speedIdx
-                    ? 'bg-white/20 text-white font-bold'
-                    : 'text-white/30 hover:text-white/50'
-                }`}
-              >
-                {s.label}
-              </button>
+              <Tip key={s.label} text={s.tip} side="top">
+                <button
+                  onClick={() => setSpeedIdx(i)}
+                  className={`text-[9px] px-1.5 py-0.5 rounded transition-all ${
+                    i === speedIdx
+                      ? 'bg-white/20 text-white font-bold'
+                      : 'text-white/30 hover:text-white/50'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              </Tip>
             ))}
           </div>
         </div>

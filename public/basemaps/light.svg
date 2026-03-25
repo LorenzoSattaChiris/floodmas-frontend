@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f5f7fa"/>
+      <stop offset="100%" stop-color="#edf0f5"/>
+    </linearGradient>
+  </defs>
+  <!-- Paper-white background -->
+  <rect width="280" height="160" fill="url(#bg)"/>
+  <!-- Water bodies -->
+  <path d="M0 90 Q30 82 60 88 Q90 94 120 86 Q150 78 180 84 Q210 90 240 82 Q260 78 280 82 L280 100 Q250 96 220 102 Q190 108 160 100 Q130 92 100 98 Q70 104 40 96 Q20 92 0 96Z" fill="#bdd8f0" opacity="0.5"/>
+  <ellipse cx="210" cy="45" rx="28" ry="14" fill="#c5ddf0" opacity="0.4"/>
+  <!-- Parks / green spaces -->
+  <rect x="18" y="22" width="32" height="22" rx="3" fill="#d4e8d0" opacity="0.6"/>
+  <rect x="195" y="105" width="38" height="20" rx="3" fill="#d4e8d0" opacity="0.5"/>
+  <circle cx="145" cy="38" r="12" fill="#dbecd8" opacity="0.5"/>
+  <!-- Building blocks -->
+  <rect x="60" y="18" width="18" height="12" rx="1" fill="#d5d9df" opacity="0.5"/>
+  <rect x="82" y="15" width="14" height="16" rx="1" fill="#d0d5dc" opacity="0.5"/>
+  <rect x="100" y="20" width="20" height="10" rx="1" fill="#d5d9df" opacity="0.45"/>
+  <rect x="62" y="40" width="22" height="14" rx="1" fill="#cdd2d9" opacity="0.45"/>
+  <rect x="88" y="38" width="16" height="18" rx="1" fill="#d5d9df" opacity="0.4"/>
+  <rect x="155" y="58" width="20" height="14" rx="1" fill="#d2d7de" opacity="0.45"/>
+  <rect x="178" y="55" width="14" height="18" rx="1" fill="#d5d9df" opacity="0.4"/>
+  <rect x="40" y="108" width="24" height="16" rx="1" fill="#cdd2d9" opacity="0.45"/>
+  <rect x="68" y="112" width="16" height="10" rx="1" fill="#d5d9df" opacity="0.4"/>
+  <rect x="120" y="110" width="20" height="14" rx="1" fill="#d2d7de" opacity="0.45"/>
+  <!-- Major roads -->
+  <path d="M0 70 Q70 62 140 68 Q210 74 280 66" fill="none" stroke="#f59e0b" stroke-width="2.5" opacity="0.35" stroke-linecap="round"/>
+  <path d="M140 0 Q135 40 138 80 Q141 120 136 160" fill="none" stroke="#f59e0b" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+  <!-- Secondary roads -->
+  <path d="M0 35 L280 30" fill="none" stroke="#9ca3af" stroke-width="1.5" opacity="0.3"/>
+  <path d="M0 125 Q80 118 160 124 Q240 130 280 122" fill="none" stroke="#9ca3af" stroke-width="1.5" opacity="0.3"/>
+  <path d="M60 0 L55 160" fill="none" stroke="#9ca3af" stroke-width="1" opacity="0.25"/>
+  <path d="M210 0 Q215 80 208 160" fill="none" stroke="#9ca3af" stroke-width="1" opacity="0.25"/>
+  <!-- Minor roads -->
+  <path d="M0 55 L280 52" fill="none" stroke="#b0b7c0" stroke-width="0.6" opacity="0.25"/>
+  <path d="M0 145 L280 142" fill="none" stroke="#b0b7c0" stroke-width="0.6" opacity="0.2"/>
+  <path d="M170 0 L168 160" fill="none" stroke="#b0b7c0" stroke-width="0.6" opacity="0.2"/>
+  <path d="M95 0 L92 160" fill="none" stroke="#b0b7c0" stroke-width="0.6" opacity="0.2"/>
+  <!-- Railway -->
+  <path d="M10 8 Q80 20 160 12 Q240 4 270 15" fill="none" stroke="#6b7280" stroke-width="1" opacity="0.2" stroke-dasharray="4 2"/>
+</svg>

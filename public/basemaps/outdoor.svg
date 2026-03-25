@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160">
+  <defs>
+    <linearGradient id="terrain" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#e8f0df"/>
+      <stop offset="30%" stop-color="#d4e4c8"/>
+      <stop offset="60%" stop-color="#c4dbb5"/>
+      <stop offset="100%" stop-color="#b8d4a8"/>
+    </linearGradient>
+  </defs>
+  <!-- Green terrain base -->
+  <rect width="280" height="160" fill="url(#terrain)"/>
+  <!-- Highland elevation bands -->
+  <path d="M0 0 L280 0 L280 30 Q240 45 200 35 Q160 25 120 40 Q80 55 40 40 Q20 32 0 38Z" fill="#a8c898" opacity="0.5"/>
+  <path d="M180 0 Q200 10 220 5 Q250 0 280 8 L280 0Z" fill="#8fb880" opacity="0.4"/>
+  <!-- Contour lines -->
+  <g fill="none" stroke="#8faa78" opacity="0.3" stroke-width="0.7">
+    <path d="M0 25 Q40 18 80 28 Q120 38 160 28 Q200 18 240 25 Q260 29 280 22"/>
+    <path d="M0 42 Q50 34 100 44 Q150 54 200 42 Q240 34 280 40"/>
+    <path d="M0 58 Q60 52 120 60 Q180 68 240 58 Q260 54 280 56"/>
+    <path d="M0 110 Q40 104 80 112 Q130 120 180 110 Q220 102 260 108 L280 106"/>
+    <path d="M0 128 Q50 120 100 130 Q160 140 220 128 Q250 122 280 126"/>
+    <path d="M0 142 Q60 136 120 144 Q180 150 240 142 Q260 138 280 140"/>
+  </g>
+  <!-- Water features -->
+  <path d="M0 82 Q30 75 60 80 Q100 88 140 78 Q170 72 200 80 Q230 88 260 82 L280 80 L280 95 Q250 92 220 98 Q190 104 160 96 Q130 88 100 94 Q70 100 40 92 Q20 88 0 92Z" fill="#88b4d4" opacity="0.45"/>
+  <!-- River -->
+  <path d="M85 0 Q80 20 88 40 Q96 55 90 75 Q84 85 88 95 Q95 110 88 130 Q82 145 86 160" fill="none" stroke="#6fa8c8" stroke-width="2.5" opacity="0.5" stroke-linecap="round"/>
+  <!-- Stream -->
+  <path d="M200 85 Q210 95 205 110 Q200 125 208 140 Q215 150 210 160" fill="none" stroke="#6fa8c8" stroke-width="1.2" opacity="0.35" stroke-linecap="round"/>
+  <!-- Small lake -->
+  <ellipse cx="225" cy="40" rx="18" ry="10" fill="#88b4d4" opacity="0.5"/>
+  <!-- Forest patches -->
+  <g opacity="0.35">
+    <circle cx="30" cy="50" r="8" fill="#5a8a48"/>
+    <circle cx="42" cy="46" r="6" fill="#5a8a48"/>
+    <circle cx="22" cy="44" r="5" fill="#5a8a48"/>
+    <circle cx="36" cy="56" r="7" fill="#5a8a48"/>
+    <circle cx="250" cy="120" r="9" fill="#5a8a48"/>
+    <circle cx="262" cy="115" r="6" fill="#5a8a48"/>
+    <circle cx="256" cy="130" r="7" fill="#5a8a48"/>
+    <circle cx="150" cy="20" r="6" fill="#5a8a48"/>
+    <circle cx="160" cy="16" r="5" fill="#5a8a48"/>
+    <circle cx="142" cy="16" r="4" fill="#5a8a48"/>
+  </g>
+  <!-- Walking trail (dashed) -->
+  <path d="M10 130 Q40 110 70 118 Q100 126 130 112 Q160 98 190 105 Q220 112 250 100 L270 94" fill="none" stroke="#b45309" stroke-width="1.5" opacity="0.3" stroke-dasharray="5 3" stroke-linecap="round"/>
+  <!-- Minor road -->
+  <path d="M0 70 Q70 62 140 68 Q210 74 280 66" fill="none" stroke="#9ca3af" stroke-width="1.5" opacity="0.25" stroke-linecap="round"/>
+  <path d="M140 0 Q136 40 138 80 Q140 120 136 160" fill="none" stroke="#9ca3af" stroke-width="1.2" opacity="0.2" stroke-linecap="round"/>
+  <!-- Spot heights -->
+  <g font-family="sans-serif" font-size="5" fill="#6b7a60" opacity="0.35">
+    <text x="38" y="30">▲ 342</text>
+    <text x="195" y="25">▲ 518</text>
+    <text x="120" y="52">▲ 215</text>
+  </g>
+</svg>

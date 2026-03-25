@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useFloodFeed } from '../hooks/useFloodData';
 import { useLayerStore } from '../stores/layerStore';
 import type { FeedItem } from '../services/api';
+import { Tip } from './Tip';
 
 /** NLP-style keyword categories for semantic highlighting */
 const NLP_CATEGORIES = [
@@ -52,9 +53,9 @@ export default function SocialFeed() {
   const bskyCount = data?.sources?.bluesky ?? 0;
 
   return (
-    <aside className="w-72 m-3 ml-0 glass rounded-2xl flex flex-col shrink-0 overflow-hidden pointer-events-auto panel-enter-right shadow-xl shadow-black/20">
-      {/* Header */}
-      <div className="px-4 py-3.5 border-b border-white/5">
+    <aside className="w-full h-full glass rounded-2xl flex flex-col overflow-hidden pointer-events-auto shadow-xl shadow-black/20" data-tour="social-feed">
+      {/* Header — drag handle */}
+      <div className="px-4 py-3.5 border-b border-white/5" data-drag-handle>
         <div className="flex items-center justify-between">
           <h2 className="text-[11px] font-semibold uppercase tracking-wider text-flood-textMuted">
             Flood Feed
@@ -74,26 +75,30 @@ export default function SocialFeed() {
         )}
         {/* Warnings / All toggle */}
         <div className="flex items-center gap-1.5 mt-2">
-          <button
-            onClick={() => setExpanded(false)}
-            className={`text-[9px] px-2 py-0.5 rounded-full font-medium transition-all ${
-              !expanded
-                ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-400/30'
-                : 'text-flood-textMuted/40 hover:text-flood-textMuted/60'
-            }`}
-          >
-            Warnings
-          </button>
-          <button
-            onClick={() => setExpanded(true)}
-            className={`text-[9px] px-2 py-0.5 rounded-full font-medium transition-all ${
-              expanded
-                ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-400/30'
-                : 'text-flood-textMuted/40 hover:text-flood-textMuted/60'
-            }`}
-          >
-            All Sources
-          </button>
+          <Tip text="Show only official Environment Agency flood warnings" side="bottom">
+            <button
+              onClick={() => setExpanded(false)}
+              className={`text-[9px] px-2 py-0.5 rounded-full font-medium transition-all ${
+                !expanded
+                  ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-400/30'
+                  : 'text-flood-textMuted/40 hover:text-flood-textMuted/60'
+              }`}
+            >
+              Warnings
+            </button>
+          </Tip>
+          <Tip text="Show all sources — EA warnings plus Bluesky community posts" side="bottom">
+            <button
+              onClick={() => setExpanded(true)}
+              className={`text-[9px] px-2 py-0.5 rounded-full font-medium transition-all ${
+                expanded
+                  ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-400/30'
+                  : 'text-flood-textMuted/40 hover:text-flood-textMuted/60'
+              }`}
+            >
+              All Sources
+            </button>
+          </Tip>
         </div>
       </div>
 
@@ -244,8 +249,12 @@ function PostCard({ item }: { item: FeedItem }) {
 }
 
 function HighlightedText({ text }: { text: string }) {
-  // Build a combined pattern from all NLP categories
-  const allPatterns = NLP_CATEGORIES.map((c) => c.pattern.source).join('|');
+  // Build a combined pattern from all NLP categories.
+  // Convert inner capturing groups → non-capturing so split() doesn't emit
+  // duplicate tokens for each sub-pattern's capture group.
+  const allPatterns = NLP_CATEGORIES.map((c) =>
+    c.pattern.source.replace(/\((?!\?)/g, '(?:')
+  ).join('|');
   const combined = new RegExp(`(${allPatterns})`, 'gi');
 
   const parts = text.split(combined).filter(Boolean);

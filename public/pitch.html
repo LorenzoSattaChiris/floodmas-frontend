@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FloodMAS: iCURE Elevator Pitch | Lorenzo Satta Chiris</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+/* ══════════════════════════════════════════════════════════
+   RESET & VARIABLES
+   ══════════════════════════════════════════════════════════ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#060a14;
+  --surface:rgba(15,23,42,.75);
+  --surface-solid:#0f172a;
+  --border:rgba(51,65,85,.4);
+  --glass:rgba(15,23,42,.55);
+  --glass-border:rgba(148,163,184,.1);
+  --glass-glow:rgba(14,165,233,.06);
+  --accent:#0ea5e9;
+  --accent-bright:#38bdf8;
+  --teal:#00b4d8;
+  --cyan:#00e5ff;
+  --red:#dc2626;
+  --amber:#f59e0b;
+  --green:#22c55e;
+  --white:#f1f5f9;
+  --gray:#94a3b8;
+  --gray-dim:#64748b;
+  --font:'Inter',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+html{font-size:16px;overflow:hidden}
+body{
+  font-family:var(--font);color:var(--white);background:var(--bg);
+  overflow:hidden;height:100vh;width:100vw;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+}
+::selection{background:rgba(14,165,233,.3)}
+
+/* Vignette for depth */
+.vignette{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 70% at 50% 50%,transparent 40%,rgba(6,10,20,.65) 100%);
+}
+
+/* Focus-visible for accessibility */
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+/* ══════════════════════════════════════════════════════════
+   THREE.JS BACKGROUND
+   ══════════════════════════════════════════════════════════ */
+#three-bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.6}
+
+/* Grid overlay */
+.grid-overlay{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+}
+.grid-overlay::after{
+  content:'';position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(14,165,233,.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(14,165,233,.02) 1px,transparent 1px);
+  background-size:80px 80px;
+  mask-image:radial-gradient(ellipse at center,black 0%,transparent 70%);
+  -webkit-mask-image:radial-gradient(ellipse at center,black 0%,transparent 70%);
+}
+
+/* ══════════════════════════════════════════════════════════
+   SLIDE CONTAINER
+   ══════════════════════════════════════════════════════════ */
+.deck{position:relative;z-index:1;width:100vw;height:100vh}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  padding:52px 80px 80px;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:all .65s var(--ease);
+  transform:translateY(24px) scale(.98);
+  overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--accent) transparent;
+  will-change:transform,opacity;
+}
+.slide::-webkit-scrollbar{width:4px}
+.slide::-webkit-scrollbar-thumb{background:var(--accent);border-radius:2px}
+.slide.active{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(0) scale(1)}
+.slide.exit-up{transform:translateY(-40px) scale(.97)}
+.slide.exit-down{transform:translateY(40px) scale(.97)}
+
+/* ══════════════════════════════════════════════════════════
+   NAVIGATION
+   ══════════════════════════════════════════════════════════ */
+.nav-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;
+  padding:12px 36px;
+  background:rgba(6,10,20,.88);
+  backdrop-filter:blur(28px) saturate(160%);
+  -webkit-backdrop-filter:blur(28px) saturate(160%);
+  border-top:1px solid rgba(14,165,233,.06);
+  box-shadow:0 -8px 32px rgba(0,0,0,.25);
+}
+.nav-progress{
+  flex:1;height:3px;background:rgba(255,255,255,.06);border-radius:2px;
+  margin:0 24px;position:relative;overflow:hidden;
+}
+.nav-progress-fill{
+  height:100%;border-radius:2px;
+  background:linear-gradient(90deg,var(--accent),var(--cyan));
+  transition:width .6s var(--ease);
+}
+.nav-btn{
+  background:none;border:1px solid rgba(255,255,255,.1);color:var(--gray);
+  font-size:12px;font-family:var(--mono);padding:8px 18px;border-radius:8px;
+  cursor:pointer;transition:all .25s var(--ease);letter-spacing:.3px;
+}
+.nav-btn:hover{color:var(--accent);border-color:var(--accent);background:rgba(14,165,233,.06)}
+.nav-btn:disabled{opacity:.2;pointer-events:none}
+.nav-dots{display:flex;gap:8px;align-items:center}
+.nav-dot{
+  width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.1);
+  border:none;cursor:pointer;transition:all .35s var(--ease);
+}
+.nav-dot.active{
+  background:var(--accent);
+  box-shadow:0 0 12px rgba(14,165,233,.5),0 0 24px rgba(14,165,233,.15);
+  transform:scale(1.5);
+}
+.nav-dot:hover{background:rgba(14,165,233,.4);transform:scale(1.2)}
+.slide-counter{
+  color:var(--gray-dim);font-size:12px;font-weight:500;
+  min-width:56px;text-align:center;font-family:var(--mono);
+}
+
+/* ══════════════════════════════════════════════════════════
+   TYPOGRAPHY
+   ══════════════════════════════════════════════════════════ */
+.slide-label{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:5px;
+  color:var(--accent);font-family:var(--mono);
+  display:flex;align-items:center;gap:14px;margin-bottom:18px;
+  opacity:.9;
+}
+.slide-label::before{
+  content:'';width:28px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,var(--accent),var(--cyan));
+}
+.slide-title{
+  font-size:clamp(30px,4.2vw,48px);font-weight:900;line-height:1.1;
+  letter-spacing:-1px;margin-bottom:14px;
+}
+.slide-title .accent{
+  background:linear-gradient(135deg,var(--accent) 0%,var(--cyan) 60%,#a78bfa 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.slide-subtitle{
+  font-size:16px;color:var(--gray);font-weight:300;
+  margin-bottom:24px;max-width:760px;line-height:1.7;
+}
+h3{font-size:17px;font-weight:700;color:var(--white);margin-bottom:10px;letter-spacing:-.2px}
+h4{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;text-transform:uppercase;letter-spacing:1.5px}
+
+/* ══════════════════════════════════════════════════════════
+   LAYOUTS
+   ══════════════════════════════════════════════════════════ */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:32px;flex:1}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;flex:1}
+.four-col{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;flex:1}
+
+/* ══════════════════════════════════════════════════════════
+   GLASSMORPHISM CARDS
+   ══════════════════════════════════════════════════════════ */
+.card{
+  background:var(--glass);
+  backdrop-filter:blur(16px) saturate(180%);
+  -webkit-backdrop-filter:blur(16px) saturate(180%);
+  border:1px solid var(--glass-border);
+  border-radius:14px;padding:20px 22px;
+  transition:all .3s var(--ease);
+  position:relative;overflow:hidden;
+  box-shadow:0 2px 12px rgba(0,0,0,.1);
+}
+.card:hover{
+  transform:translateY(-2px);
+  border-color:rgba(14,165,233,.18);
+  box-shadow:0 8px 32px rgba(14,165,233,.06),0 4px 16px rgba(0,0,0,.12);
+}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  border-radius:14px 14px 0 0;
+}
+.card-accent::before{background:linear-gradient(90deg,var(--accent),var(--cyan))}
+.card-red::before{background:var(--red)}
+.card-amber::before{background:var(--amber)}
+.card-green::before{background:var(--green)}
+.card-purple::before{background:#8b5cf6}
+
+/* ══════════════════════════════════════════════════════════
+   STAT BLOCKS
+   ══════════════════════════════════════════════════════════ */
+.stat-row{display:flex;gap:1px;border-radius:16px;overflow:hidden;margin:18px 0;box-shadow:0 4px 24px rgba(0,0,0,.15)}
+.stat-block{
+  flex:1;padding:22px 18px;text-align:center;
+  background:var(--glass);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  position:relative;
+  transition:background .3s ease;
+}
+.stat-block:hover{background:rgba(14,165,233,.04)}
+.stat-block::after{
+  content:'';position:absolute;right:0;top:20%;height:60%;width:1px;
+  background:linear-gradient(180deg,transparent,rgba(148,163,184,.1),transparent);
+}
+.stat-block:last-child::after{display:none}
+.stat-number{
+  font-size:clamp(26px,3.2vw,38px);font-weight:900;letter-spacing:-.5px;
+  background:linear-gradient(180deg,var(--white) 30%,var(--gray));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;line-height:1.15;
+}
+.stat-number .unit{
+  font-size:.52em;font-weight:700;letter-spacing:0;
+  -webkit-text-fill-color:initial;
+  background:none;
+  color:var(--gray);
+  opacity:.85;
+  margin-left:1px;
+}
+.stat-number.red{
+  background:linear-gradient(180deg,var(--red) 30%,#fca5a5);
+  -webkit-background-clip:text;background-clip:text;
+}
+.stat-number.green{
+  background:linear-gradient(180deg,var(--green) 30%,#86efac);
+  -webkit-background-clip:text;background-clip:text;
+}
+.stat-label{
+  font-size:11px;color:var(--gray-dim);margin-top:6px;
+  line-height:1.4;font-weight:500;letter-spacing:.2px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   CITATION TAGS
+   ══════════════════════════════════════════════════════════ */
+.cite{
+  font-size:10px;color:var(--gray-dim);font-family:var(--mono);
+  font-weight:500;opacity:.7;
+}
+
+/* ══════════════════════════════════════════════════════════
+   BULLET LISTS
+   ══════════════════════════════════════════════════════════ */
+.bullet-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.bullet-list li{
+  font-size:13px;line-height:1.65;color:rgba(241,245,249,.82);
+  padding-left:16px;position:relative;
+}
+.bullet-list li::before{
+  content:'';position:absolute;left:0;top:8px;
+  width:5px;height:5px;border-radius:50%;
+  background:var(--accent);opacity:.8;
+}
+
+/* ══════════════════════════════════════════════════════════
+   FLOW DIAGRAM (SOLUTION SLIDE)
+   ══════════════════════════════════════════════════════════ */
+.flow{
+  display:flex;align-items:center;justify-content:center;
+  gap:0;margin:24px 0 16px;flex-wrap:wrap;
+}
+.flow-node{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:18px 24px;border-radius:14px;
+  background:var(--glass);border:1px solid var(--glass-border);
+  backdrop-filter:blur(14px);min-width:136px;
+  transition:all .3s var(--ease);
+  box-shadow:0 2px 12px rgba(0,0,0,.1);
+}
+.flow-node:hover{
+  transform:translateY(-4px) scale(1.02);
+  border-color:rgba(14,165,233,.22);
+  box-shadow:0 8px 30px rgba(14,165,233,.1),0 2px 8px rgba(0,0,0,.1);
+}
+.flow-node .ico{display:flex;align-items:center;justify-content:center}
+.flow-node .ico i{width:28px;height:28px;stroke-width:1.8}
+.flow-node h4{font-size:11px;margin-bottom:0;letter-spacing:1px}
+.flow-node p{font-size:10px;color:var(--gray-dim);line-height:1.4;text-align:center}
+.flow-arrow{
+  color:var(--accent);font-size:22px;font-weight:300;
+  margin:0 8px;opacity:.5;
+  animation:arrowPulse 2s ease-in-out infinite;
+}
+.flow-arrow:nth-child(4){animation-delay:.3s}
+.flow-arrow:nth-child(6){animation-delay:.6s}
+.flow-arrow:nth-child(8){animation-delay:.9s}
+@keyframes arrowPulse{0%,100%{opacity:.3;transform:translateX(0)}50%{opacity:.7;transform:translateX(3px)}}
+
+/* Orchestrator Hub */
+.orch-hub{
+  display:flex;align-items:center;gap:16px;
+  padding:16px 24px;border-radius:12px;margin:12px auto 0;
+  background:rgba(14,165,233,.04);
+  border:1px solid rgba(14,165,233,.12);
+  max-width:700px;
+}
+.orch-hub .ico{flex-shrink:0}
+.orch-hub .ico i{width:24px;height:24px;stroke:var(--accent);stroke-width:1.8}
+.orch-hub p{font-size:13px;color:var(--gray);line-height:1.6}
+.orch-hub strong{color:var(--white)}
+
+/* ══════════════════════════════════════════════════════════
+   COMPETITOR TABLE
+   ══════════════════════════════════════════════════════════ */
+.comp-table{
+  width:100%;border-collapse:separate;border-spacing:0;
+  font-size:12px;margin:12px 0;
+}
+.comp-table th{
+  text-align:left;padding:10px 14px;
+  background:rgba(14,165,233,.06);color:var(--accent);
+  font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1px;
+  border-bottom:1px solid rgba(14,165,233,.12);
+}
+.comp-table th:first-child{border-radius:10px 0 0 0}
+.comp-table th:last-child{border-radius:0 10px 0 0}
+.comp-table td{
+  padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);
+  color:rgba(241,245,249,.8);vertical-align:top;
+}
+.comp-table tr:hover td{background:rgba(14,165,233,.03)}
+.comp-table .tag{
+  display:inline-block;padding:2px 8px;border-radius:6px;
+  font-size:10px;font-weight:600;font-family:var(--mono);
+}
+.tag-red{background:rgba(220,38,38,.12);color:var(--red);border:1px solid rgba(220,38,38,.2)}
+.tag-green{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+
+/* ══════════════════════════════════════════════════════════
+   TEAM GRID
+   ══════════════════════════════════════════════════════════ */
+.team-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:14px 0}
+.team-card{
+  text-align:center;padding:20px 14px;border-radius:14px;
+  background:var(--glass);border:1px solid var(--glass-border);
+  backdrop-filter:blur(14px);
+  transition:all .3s var(--ease);
+  box-shadow:0 2px 12px rgba(0,0,0,.08);
+}
+.team-card:hover{transform:translateY(-3px);border-color:rgba(14,165,233,.18);box-shadow:0 8px 28px rgba(14,165,233,.06)}
+.team-avatar{
+  width:50px;height:50px;border-radius:50%;margin:0 auto 10px;
+  background:linear-gradient(135deg,var(--accent),var(--cyan));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:18px;color:var(--bg);
+  box-shadow:0 0 0 3px rgba(14,165,233,.12),0 4px 16px rgba(14,165,233,.15);
+}
+.team-name{font-size:13px;font-weight:700;color:var(--white);margin-bottom:2px}
+.team-role{font-size:11px;color:var(--accent);font-weight:600;margin-bottom:6px;letter-spacing:.3px}
+.team-skills{font-size:10px;color:var(--gray-dim);line-height:1.5}
+
+/* ══════════════════════════════════════════════════════════
+   CTA BUTTON
+   ══════════════════════════════════════════════════════════ */
+.cta{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:14px 32px;border-radius:12px;
+  background:linear-gradient(135deg,var(--accent),var(--teal));
+  color:var(--bg);font-weight:700;font-size:14px;
+  text-decoration:none;letter-spacing:.3px;
+  position:relative;overflow:hidden;
+  transition:all .35s var(--ease);
+  box-shadow:0 4px 20px rgba(14,165,233,.25);
+}
+.cta::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);
+  transform:translateX(-100%);transition:transform .6s var(--ease);
+}
+.cta:hover::before{transform:translateX(100%)}
+.cta:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(14,165,233,.35)}
+.cta .ico i{width:18px;height:18px;stroke:currentColor;stroke-width:2}
+
+/* ══════════════════════════════════════════════════════════
+   PROOF POINTS
+   ══════════════════════════════════════════════════════════ */
+.proof-row{display:flex;gap:16px;flex-wrap:wrap;margin:16px 0}
+.proof{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:12px 18px;border-radius:10px;
+  background:rgba(34,197,94,.04);border:1px solid rgba(34,197,94,.12);
+  flex:1;min-width:180px;
+}
+.proof .ico i{width:18px;height:18px;stroke:var(--green);stroke-width:2;flex-shrink:0;margin-top:1px}
+.proof p{font-size:12px;color:var(--gray);line-height:1.5}
+.proof strong{color:var(--white)}
+
+/* ══════════════════════════════════════════════════════════
+   QUOTE BLOCK
+   ══════════════════════════════════════════════════════════ */
+.quote{
+  padding:16px 20px;border-radius:12px;
+  border-left:3px solid var(--accent);
+  background:rgba(14,165,233,.03);margin:10px 0;
+}
+.quote p{font-size:13px;font-style:italic;color:rgba(241,245,249,.75);line-height:1.65}
+.quote .attr{font-size:11px;color:var(--gray-dim);font-style:normal;margin-top:6px;font-weight:600}
+
+/* ══════════════════════════════════════════════════════════
+   ROADMAP
+   ══════════════════════════════════════════════════════════ */
+.roadmap{display:flex;gap:1px;border-radius:14px;overflow:hidden;margin:16px 0}
+.roadmap-phase{
+  flex:1;padding:18px 16px;background:var(--glass);
+  backdrop-filter:blur(12px);text-align:center;position:relative;
+}
+.roadmap-phase::after{
+  content:'';position:absolute;right:0;top:15%;height:70%;width:1px;
+  background:linear-gradient(180deg,transparent,rgba(148,163,184,.1),transparent);
+}
+.roadmap-phase:last-child::after{display:none}
+.roadmap-label{font-size:10px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.roadmap-title{font-size:15px;font-weight:800;color:var(--white);margin-bottom:4px}
+.roadmap-desc{font-size:11px;color:var(--gray-dim);line-height:1.5}
+
+/* ══════════════════════════════════════════════════════════
+   LOGO & PAGE NUMBER
+   ══════════════════════════════════════════════════════════ */
+.logo{
+  position:fixed;top:18px;left:28px;z-index:100;
+  display:flex;align-items:center;gap:8px;
+}
+.logo span{
+  font-size:14px;font-weight:800;letter-spacing:.6px;
+  background:linear-gradient(135deg,var(--accent),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.logo .ico i{width:16px;height:16px;stroke:var(--accent);stroke-width:2}
+.badge{
+  position:fixed;top:18px;right:28px;z-index:100;
+  font-size:9px;font-family:var(--mono);color:var(--gray-dim);
+  letter-spacing:1.2px;text-transform:uppercase;
+  padding:6px 14px;border-radius:8px;
+  background:rgba(15,23,42,.55);border:1px solid var(--glass-border);
+  backdrop-filter:blur(14px);
+}
+
+/* ══════════════════════════════════════════════════════════
+   REFERENCES SLIDE
+   ══════════════════════════════════════════════════════════ */
+.ref-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px 32px;
+  margin-top:16px;flex:1;
+}
+.ref-item{
+  font-size:10.5px;line-height:1.55;color:var(--gray-dim);
+  padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);
+}
+.ref-item .ref-num{
+  display:inline-block;min-width:24px;
+  color:var(--accent);font-family:var(--mono);font-weight:700;font-size:10px;
+}
+.ref-item .ref-text{color:rgba(241,245,249,.6)}
+.ref-item em{color:var(--gray);font-style:italic}
+@media(max-width:1024px){.ref-grid{grid-template-columns:1fr}}
+
+/* ══════════════════════════════════════════════════════════
+   ANIMATIONS
+   ══════════════════════════════════════════════════════════ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+@keyframes slideRight{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
+.slide.active .anim{animation:fadeUp .7s var(--ease) both}
+.slide.active .anim-scale{animation:scaleIn .7s var(--ease) both}
+.slide.active .anim-right{animation:slideRight .6s var(--ease) both}
+.slide.active .d1{animation-delay:.1s}
+.slide.active .d2{animation-delay:.2s}
+.slide.active .d3{animation-delay:.32s}
+.slide.active .d4{animation-delay:.44s}
+.slide.active .d5{animation-delay:.56s}
+.slide.active .d6{animation-delay:.68s}
+.slide.active .d7{animation-delay:.8s}
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════════════════ */
+@media(max-width:1200px){
+  .slide{padding:44px 48px 76px}
+  .two-col{gap:24px}
+}
+@media(max-width:1024px){
+  .slide{padding:40px 32px 76px}
+  .two-col,.three-col,.four-col{grid-template-columns:1fr}
+  .team-grid{grid-template-columns:1fr 1fr}
+  .flow{flex-wrap:wrap;gap:8px}
+  .flow-arrow{display:none}
+  .stat-row{flex-wrap:wrap}
+  .stat-block{min-width:140px}
+  .roadmap{flex-direction:column}
+}
+@media(max-width:640px){
+  .slide{padding:32px 20px 72px}
+  .slide-title{letter-spacing:-.5px}
+  .stat-block{padding:16px 12px}
+  .team-grid{grid-template-columns:1fr}
+  .nav-bar{padding:10px 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- Three.js canvas background -->
+<canvas id="three-bg"></canvas>
+<div class="grid-overlay"></div>
+<div class="vignette"></div>
+
+<!-- Logo & Badge -->
+<div class="logo">
+  <span class="ico"><i data-lucide="waves"></i></span>
+  <span>FloodMAS</span>
+</div>
+<div class="badge">iCURE Elevator Pitch</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE DECK
+     ══════════════════════════════════════════════════════════ -->
+<div class="deck" id="deck">
+
+<!-- ─── SLIDE 1: THE CRISIS ─────────────────────────────── -->
+<div class="slide active" id="s0">
+  <div class="slide-label anim">The Problem</div>
+  <div class="slide-title anim d1">
+    6.3 Million Properties at Risk.<br>
+    <span class="accent">A System Failing at Every Level.</span>
+  </div>
+  <div class="slide-subtitle anim d2">
+    Flooding is the UK&rsquo;s most costly natural hazard. Climate intensification, record sewage discharge, 
+    and fragmented institutional responsibility have created compound failure.
+    Existing systems cannot keep pace.
+  </div>
+
+  <div class="stat-row anim-scale d3">
+    <div class="stat-block">
+      <div class="stat-number">6.3<span class="unit">M</span></div>
+      <div class="stat-label">Properties at flood risk today<br><span class="cite">[1, 2]</span></div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-number">&pound;3.6<span class="unit">B</span></div>
+      <div class="stat-label">Projected annual damage by 2050<br><span class="cite">[3]</span></div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-number red">3.61<span class="unit"> M hrs</span></div>
+      <div class="stat-label">Record sewage discharged (2024)<br><span class="cite">[4, 5]</span></div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-number">8<span class="unit">M</span></div>
+      <div class="stat-label">At-risk properties by mid-century<br><span class="cite">[1, 6]</span></div>
+    </div>
+  </div>
+
+  <div class="two-col anim d4" style="margin-top:16px">
+    <div class="card card-red">
+      <h4>Accelerating Risk</h4>
+      <ul class="bullet-list">
+        <li>High-risk properties (rivers &amp; sea) up <strong>88%</strong>; surface water risk <strong>tripled</strong> to 1.1M [1]</li>
+        <li>Flash-flood rainfall events projected <strong>4&times; more frequent</strong> by 2070s [6]</li>
+        <li>Insurers paying out <strong>&pound;1.18 for every &pound;1</strong> in premiums, five consecutive years of losses [7]</li>
+        <li><strong>109,000+ homes</strong> built in highest-risk Flood Zone 3 since 2013 [8]</li>
+      </ul>
+    </div>
+    <div class="card card-amber">
+      <h4>Human Impact</h4>
+      <ul class="bullet-list">
+        <li>Flood victims <strong>6&ndash;7&times; more likely</strong> to develop depression, anxiety, or PTSD [9]</li>
+        <li>Mental health effects persist <strong>&ge;3 years</strong> post-event [10]</li>
+        <li>Only <strong>20%</strong> of at-risk homeowners receive flood alerts [11]</li>
+        <li><strong>350,000 properties</strong> excluded from Flood Re, effectively uninsurable [12, 13]</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 2: THE MARKET GAP ─────────────────────────── -->
+<div class="slide" id="s1">
+  <div class="slide-label anim">Market Need</div>
+  <div class="slide-title anim d1">
+    Everyone Predicts.<br>
+    <span class="accent">Nobody Coordinates.</span>
+  </div>
+  <div class="slide-subtitle anim d2">
+    A rapidly growing market, yet every existing solution addresses a single fragment.
+    The critical gap between prediction and coordinated multi-agency response remains unserved.
+  </div>
+
+  <div class="two-col anim d3">
+    <div>
+      <h3>Structural Failures</h3>
+      <div class="card card-red" style="margin-bottom:14px">
+        <ul class="bullet-list">
+          <li>Surface water modelling <strong>underdeveloped</strong> vs. fluvial &amp; coastal systems [14]</li>
+          <li>Last national flood risk assessment update: <strong>2018</strong> [1]</li>
+          <li>Investment gap: <strong>&pound;790M/yr</strong> allocated vs. <strong>&pound;1.5B/yr</strong> recommended [15]</li>
+          <li>Flood defence infrastructure <strong>reaching end of design life</strong> [16]</li>
+          <li>Responsibility split across <strong>EA, 152 LLFAs, 11 water companies, Ofwat, DEFRA</strong> [14, 16]</li>
+        </ul>
+      </div>
+
+      <div class="quote">
+        <p>&ldquo;The next frontier is autonomous response: AI agents that don&rsquo;t just predict floods, but automatically trigger drainage systems, alert residents, and coordinate emergency services.&rdquo;</p>
+        <div class="attr">&ndash; Lewis Seale, ex-Previsico</div>
+      </div>
+    </div>
+
+    <div>
+      <h3>Competitive Landscape</h3>
+      <table class="comp-table">
+        <thead>
+          <tr>
+            <th>Platform</th>
+            <th>What It Does</th>
+            <th>Orchestration</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Previsico</strong> <span class="cite">[17]</span></td>
+            <td>Surface water forecasting (48hr)</td>
+            <td><span class="tag tag-red">Prediction only</span></td>
+          </tr>
+          <tr>
+            <td><strong>Fathom</strong> <span class="cite">[18]</span></td>
+            <td>Global risk mapping (Swiss Re)</td>
+            <td><span class="tag tag-red">Static maps</span></td>
+          </tr>
+          <tr>
+            <td><strong>FloodFlash</strong> <span class="cite">[19]</span></td>
+            <td>Parametric insurance triggers</td>
+            <td><span class="tag tag-red">Insurance only</span></td>
+          </tr>
+          <tr>
+            <td><strong>Google</strong> <span class="cite">[20]</span></td>
+            <td>Flood Hub: 80 countries, 7-day</td>
+            <td><span class="tag tag-red">No UK surface</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--accent);font-weight:700">FloodMAS</td>
+            <td>Multi-agent prediction + response</td>
+            <td><span class="tag tag-green">Full stack</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top:14px">
+        <h3>Market Opportunity</h3>
+        <div style="display:flex;gap:10px">
+          <div class="card card-green" style="flex:1;text-align:center;padding:12px">
+            <div style="font-size:22px;font-weight:900;color:var(--accent)">$3.7B</div>
+            <div class="stat-label">Flood warning market by 2030<br><span class="cite">[21]</span></div>
+          </div>
+          <div class="card card-green" style="flex:1;text-align:center;padding:12px">
+            <div style="font-size:22px;font-weight:900;color:var(--accent)">&pound;88B</div>
+            <div class="stat-label">Ofwat investment 2025&ndash;30<br><span class="cite">[22, 23]</span></div>
+          </div>
+          <div class="card card-green" style="flex:1;text-align:center;padding:12px">
+            <div style="font-size:22px;font-weight:900;color:var(--accent)">&euro;400:1</div>
+            <div class="stat-label">Proven early-warning ROI<br><span class="cite">[24]</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 3: THE SOLUTION ───────────────────────────── -->
+<div class="slide" id="s2">
+  <div class="slide-label anim">Our Proposition &amp; MVP</div>
+  <div class="slide-title anim d1">
+    FloodMAS: From Prediction<br>
+    <span class="accent">to Coordinated Action.</span>
+  </div>
+  <div class="slide-subtitle anim d2">
+    Four specialist AI agents orchestrated by a GPT-4o supervisor through LangGraph.
+    Every decision logged in natural language. Every critical action requires human approval.
+  </div>
+
+  <div class="flow anim d3">
+    <div class="flow-node" style="--node-color:var(--cyan)">
+      <div class="ico" style="color:var(--cyan)"><i data-lucide="radio"></i></div>
+      <h4>Monitor</h4>
+      <p>EA Flood API +<br>Open-Meteo + Bluesky</p>
+    </div>
+    <div class="flow-arrow">&rsaquo;</div>
+    <div class="flow-node" style="--node-color:#8b5cf6">
+      <div class="ico" style="color:#8b5cf6"><i data-lucide="sparkles"></i></div>
+      <h4>Forecast</h4>
+      <p>GPT-4o + Weather<br>&amp; River Discharge APIs</p>
+    </div>
+    <div class="flow-arrow">&rsaquo;</div>
+    <div class="flow-node" style="--node-color:var(--amber)">
+      <div class="ico" style="color:var(--amber)"><i data-lucide="shield-alert"></i></div>
+      <h4>Risk</h4>
+      <p>EA Flood Zones +<br>Infrastructure DB</p>
+    </div>
+    <div class="flow-arrow">&rsaquo;</div>
+    <div class="flow-node" style="--node-color:var(--red)">
+      <div class="ico" style="color:var(--red)"><i data-lucide="siren"></i></div>
+      <h4>Response</h4>
+      <p>Alerts, Evacuation<br>&amp; Resource Plans</p>
+    </div>
+  </div>
+
+  <div class="orch-hub anim d4">
+    <div class="ico"><i data-lucide="brain"></i></div>
+    <p><strong>LangGraph Orchestrator</strong> (GPT-4o supervisor + 4 GPT-4o-mini workers) coordinates via hierarchical
+    state-graph with streaming SSE. Full audit trail, natural-language decision logs,
+    <strong>human-in-the-loop</strong> at every critical gate.</p>
+  </div>
+
+  <div class="three-col anim d5" style="margin-top:18px">
+    <div class="card card-accent">
+      <h4>Why It&rsquo;s Different</h4>
+      <ul class="bullet-list">
+        <li><strong>Only platform</strong> bridging prediction to coordinated multi-agency response</li>
+        <li>5 autonomous agents with <strong>real-time</strong> EA, Open-Meteo, ArcGIS and Bluesky data</li>
+        <li>Open architecture: designed for PINN + XGBoost modules validated in literature [28, 29]</li>
+      </ul>
+    </div>
+    <div class="card card-green">
+      <h4>Working Prototype (TRL 5)</h4>
+      <ul class="bullet-list">
+        <li>Deployed live at <strong>flood-mas.web.app</strong></li>
+        <li>5 LangGraph agents with GPT-4o orchestration</li>
+        <li>React + MapLibre dashboard, 9 live data layers</li>
+        <li>JavaScript &middot; LangGraph &middot; Firebase</li>
+      </ul>
+    </div>
+    <div class="card card-purple">
+      <h4>Research-Backed Roadmap</h4>
+      <ul class="bullet-list">
+        <li>Literature: LSTM + PINN hybrid achieves <strong>4&ndash;6&times; accuracy gain</strong> [27, 28]; targeted for Phase 2</li>
+        <li>ConvLSTM shows <strong>26% error reduction</strong> in flash floods [31]; architecture-ready</li>
+        <li>12-hour early warnings proven to cut damage by <strong>up to 60%</strong> [32, 33]</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 4: TEAM & VALIDATION ──────────────────────── -->
+<div class="slide" id="s3">
+  <div class="slide-label anim">Team &amp; Partners</div>
+  <div class="slide-title anim d1">
+    Built by Researchers.<br>
+    <span class="accent">Validated by Industry.</span>
+  </div>
+  <div class="slide-subtitle anim d2">
+    Four complementary disciplines (AI engineering, hydrology, environmental regulation, and commercial
+    strategy) backed by published research, international conferences, and institutional partnerships.
+  </div>
+
+  <div class="team-grid anim d3">
+    <div class="team-card">
+      <div class="team-avatar">L</div>
+      <div class="team-name">Lorenzo Satta Chiris</div>
+      <div class="team-role">Lead Engineer &amp; CTO</div>
+      <div class="team-skills">Full-stack JS, LangGraph orchestration. Designed &amp; deployed FloodMAS prototype. Published: arXiv [34, 35]. Speaker: DevFest, Azure AI Connect, Dutch AI Conference [36].</div>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar">V</div>
+      <div class="team-name">Valeria Ortega Velarde</div>
+      <div class="team-role">AI/ML Research Lead</div>
+      <div class="team-skills">Deep learning for hydrology: LSTM, Transformer, PINNs. Model validation, flood forecasting literature &amp; technical risk assessment.</div>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar">K</div>
+      <div class="team-name">Khaleed Arafat Razac</div>
+      <div class="team-role">Environmental Engineer</div>
+      <div class="team-skills">UK flood risk regulation, surface water hydrology. EA, Ofwat &amp; Flood Re frameworks. Ensures outputs are operationally credible &amp; regulation-aligned.</div>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar">A</div>
+      <div class="team-name">Alex Bailey</div>
+      <div class="team-role">Commercial Strategy Lead</div>
+      <div class="team-skills">Entrepreneurship &amp; market strategy. Customer discovery, go-to-market, grant communications. UK public sector &amp; utilities B2B SaaS procurement.</div>
+    </div>
+  </div>
+
+  <div class="two-col anim d4">
+    <div>
+      <h3>Institutional Access</h3>
+      <div class="card card-accent">
+        <ul class="bullet-list">
+          <li><strong>University of Exeter</strong>: &pound;38M Flood &amp; Droughts Research Infrastructure; Severn Trent pathway [37]</li>
+          <li><strong>Environment Agency</strong>: Real-Time Flood Monitoring API; formal data partnership</li>
+          <li><strong>Ofwat Innovation Fund</strong>: direct procurement channel into &pound;88B investment cycle [22, 23]</li>
+          <li><strong>ADEPT Network</strong>: access to 152 Lead Local Flood Authority decision-makers [38]</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <h3>Credibility &amp; Evidence</h3>
+      <div class="quote" style="margin-bottom:10px">
+        <p>&ldquo;Tools and data need to fit existing workflows, local constraints, and decision timelines.&rdquo;</p>
+        <div class="attr">&ndash; Marion Chiris, FAO/UN Project Manager</div>
+      </div>
+      <div class="proof-row" style="margin:0">
+        <div class="proof" style="flex:1">
+          <span class="ico"><i data-lucide="check-circle-2"></i></span>
+          <p><strong>Working prototype</strong> deployed &amp; live</p>
+        </div>
+        <div class="proof" style="flex:1">
+          <span class="ico"><i data-lucide="check-circle-2"></i></span>
+          <p><strong>Peer-reviewed</strong> agent safety research [34, 35]</p>
+        </div>
+      </div>
+      <div class="proof-row" style="margin:0;margin-top:6px">
+        <div class="proof" style="flex:1">
+          <span class="ico"><i data-lucide="check-circle-2"></i></span>
+          <p><strong>5 international conferences</strong> in AI &amp; agents [36]</p>
+        </div>
+        <div class="proof" style="flex:1">
+          <span class="ico"><i data-lucide="check-circle-2"></i></span>
+          <p><strong>Blue Ocean</strong>: zero direct competitors in AI flood orchestration [39]</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 5: THE ASK ────────────────────────────────── -->
+<div class="slide" id="s4">
+  <div class="slide-label anim">The Opportunity</div>
+  <div class="slide-title anim d1">
+    Technology Ready. Regulation Shifting.<br>
+    <span class="accent">The Window is Now.</span>
+  </div>
+  <div class="slide-subtitle anim d2">
+    The UK is replacing Ofwat with an integrated water regulator backed by &pound;104B of investment [40].
+    FloodMAS is built, live, and positioned at the exact convergence of technical maturity, regulatory reform, and market urgency.
+  </div>
+
+  <div class="roadmap anim-scale d3">
+    <div class="roadmap-phase">
+      <div class="roadmap-label">Months 1&ndash;6</div>
+      <div class="roadmap-title">Validate</div>
+      <div class="roadmap-desc">Complete MVP &middot; 2&ndash;3 LLFA pilots<br>Ofwat Innovation Fund application</div>
+    </div>
+    <div class="roadmap-phase">
+      <div class="roadmap-label">Months 7&ndash;12</div>
+      <div class="roadmap-title">Traction</div>
+      <div class="roadmap-desc">5 paid authorities &middot; first utility pilot<br>Published case study evidence</div>
+    </div>
+    <div class="roadmap-phase">
+      <div class="roadmap-label">Months 13&ndash;18</div>
+      <div class="roadmap-title">Scale</div>
+      <div class="roadmap-desc">10 LLFAs + 2 utilities &middot; insurer API<br>Pre-seed fundraise</div>
+    </div>
+  </div>
+
+  <div class="two-col anim d4">
+    <div>
+      <h3>Revenue Model</h3>
+      <div class="card card-accent">
+        <ul class="bullet-list">
+          <li><strong>Core:</strong> &pound;2&ndash;5K/mo per authority, covering monitoring, prediction and alerts</li>
+          <li><strong>Pro:</strong> &pound;8&ndash;15K/mo, including AI response plans, multi-agency coordination and SHAP reports</li>
+          <li><strong>Enterprise:</strong> Custom pricing, covering PINN modules, white-label and insurer API</li>
+          <li><strong>Year 3 target:</strong> &pound;500K&ndash;1.2M ARR</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <h3>Why Now, Not Later</h3>
+      <div class="card card-green">
+        <ul class="bullet-list">
+          <li><strong>Technology convergence:</strong> LLM multi-agent systems production-ready only since 2024 [41]</li>
+          <li><strong>Regulatory window:</strong> Ofwat abolished; integrated regulator + &pound;104B investment [40]</li>
+          <li><strong>Market signal:</strong> Record &pound;585M weather claims in 2024 [7]; &pound;88B Ofwat cycle [22]</li>
+          <li><strong>First-mover advantage:</strong> 12&ndash;18 month window before consolidation</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:28px;margin-top:20px" class="anim d5">
+    <a href="https://flood-mas.web.app" target="_blank" rel="noopener noreferrer" class="cta">
+      <span class="ico"><i data-lucide="external-link"></i></span>
+      View Live Prototype
+    </a>
+    <div style="font-size:13px;color:var(--gray);line-height:1.6">
+      <strong style="color:var(--white)">FloodMAS Technologies</strong><br>
+      University of Exeter Spinout &middot; Co. No. 19462837
+    </div>
+  </div>
+
+  <div class="proof-row anim d6" style="margin-top:14px">
+    <div class="proof">
+      <span class="ico"><i data-lucide="check-circle-2"></i></span>
+      <p><strong>Working prototype</strong> live &amp; deployed</p>
+    </div>
+    <div class="proof">
+      <span class="ico"><i data-lucide="check-circle-2"></i></span>
+      <p><strong>Zero direct competitors</strong> in orchestration</p>
+    </div>
+    <div class="proof">
+      <span class="ico"><i data-lucide="check-circle-2"></i></span>
+      <p><strong>Regulatory alignment</strong> to 2025 reform</p>
+    </div>
+    <div class="proof">
+      <span class="ico"><i data-lucide="check-circle-2"></i></span>
+      <p><strong>&euro;400:1</strong> proven ROI for early warning [24]</p>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ─── SLIDE 6: REFERENCES ──────────────────────────────── -->
+<div class="slide" id="s5">
+  <div class="slide-label anim">References</div>
+  <div class="slide-title anim d1" style="font-size:clamp(22px,3vw,32px)">
+    Sources &amp; Citations
+  </div>
+  <div class="slide-subtitle anim d2" style="margin-bottom:12px">
+    All claims are supported by peer-reviewed research, government publications, and verified industry data.
+  </div>
+
+  <div class="ref-grid anim d3">
+    <div class="ref-item"><span class="ref-num">[1]</span> <span class="ref-text">Environment Agency (2025) <em>National assessment of flood and coastal erosion risk in England 2024.</em> Bristol: EA.</span></div>
+    <div class="ref-item"><span class="ref-num">[2]</span> <span class="ref-text">Climate Change Committee (2023) <em>Progress in adapting to climate change.</em> London: CCC.</span></div>
+    <div class="ref-item"><span class="ref-num">[3]</span> <span class="ref-text">Sayers, P.B. et al. (2015) <em>Climate Change Risk Assessment 2017: Projections of future flood risk.</em> London: CCC.</span></div>
+    <div class="ref-item"><span class="ref-num">[4]</span> <span class="ref-text">Rivers Trust (2025) <em>Event Duration Monitoring data 2024.</em> Lancaster: Rivers Trust.</span></div>
+    <div class="ref-item"><span class="ref-num">[5]</span> <span class="ref-text">Stallard, E. and Fisher, J. (2025) &lsquo;Sewage spilled into England&rsquo;s rivers for record 3.6m hours&rsquo;, <em>BBC News</em>, 27 March.</span></div>
+    <div class="ref-item"><span class="ref-num">[6]</span> <span class="ref-text">Met Office (2018) <em>UK Climate Projections (UKCP18).</em> Exeter: Met Office.</span></div>
+    <div class="ref-item"><span class="ref-num">[7]</span> <span class="ref-text">LexisNexis Risk Solutions (2025) &lsquo;UK insurers confront century-long flood risk&rsquo;, <em>Insurance Business UK</em>, 25 Nov.</span></div>
+    <div class="ref-item"><span class="ref-num">[8]</span> <span class="ref-text">CPRE / The Flood Hub (2023) <em>Housing developments in Flood Zone 3 (2013&ndash;2023).</em></span></div>
+    <div class="ref-item"><span class="ref-num">[9]</span> <span class="ref-text">Public Health England (2020) <em>The English National Study of Flooding and Health.</em> London: PHE.</span></div>
+    <div class="ref-item"><span class="ref-num">[10]</span> <span class="ref-text">Mulchandani, R. et al. (2020) &lsquo;Flooding &amp; Health: psychological morbidity at three years&rsquo;, <em>BMC Public Health</em>, 20(1), p. 321.</span></div>
+    <div class="ref-item"><span class="ref-num">[11]</span> <span class="ref-text">Landmark Information Group (2019) &lsquo;Six out of 10 people admit to never checking their flood risk.&rsquo;</span></div>
+    <div class="ref-item"><span class="ref-num">[12]</span> <span class="ref-text">Flood Re (2024) <em>About Flood Re: How it works.</em> London: Flood Re.</span></div>
+    <div class="ref-item"><span class="ref-num">[13]</span> <span class="ref-text">House of Commons Library (2023) <em>Flood Re scheme: Briefing Paper.</em> London: House of Commons.</span></div>
+    <div class="ref-item"><span class="ref-num">[14]</span> <span class="ref-text">House of Commons EAC (2025) <em>Flood resilience in England.</em> HC 550. London: House of Commons.</span></div>
+    <div class="ref-item"><span class="ref-num">[15]</span> <span class="ref-text">National Infrastructure Commission (2018) <em>Preparing for a drier future.</em> London: NIC.</span></div>
+    <div class="ref-item"><span class="ref-num">[16]</span> <span class="ref-text">Environment Agency (2025) <em>FCERM report: 1 April 2023 to 31 March 2024.</em> Bristol: EA.</span></div>
+    <div class="ref-item"><span class="ref-num">[17]</span> <span class="ref-text">BlueOrchard (2025) Previsico investment. | Hendries, S. (2025) &lsquo;Previsico secures Series A.&rsquo;</span></div>
+    <div class="ref-item"><span class="ref-num">[18]</span> <span class="ref-text">Swiss Re (2023) &lsquo;Swiss Re acquires Fathom.&rsquo; | Fathom (2024) <em>Global flood risk intelligence.</em></span></div>
+    <div class="ref-item"><span class="ref-num">[19]</span> <span class="ref-text">FloodFlash (2023) &lsquo;&pound;15M Series A.&rsquo; | Insurance Business UK (2024) &lsquo;NormanMax acquires FloodFlash.&rsquo;</span></div>
+    <div class="ref-item"><span class="ref-num">[20]</span> <span class="ref-text">Google (2024) <em>Flood Hub: Global flood forecasting.</em> Available at: sites.research.google/floods/</span></div>
+    <div class="ref-item"><span class="ref-num">[21]</span> <span class="ref-text">Strategic Market Research (n.d.) <em>Flood Warning System market size ($3.7B) 2030.</em></span></div>
+    <div class="ref-item"><span class="ref-num">[22]</span> <span class="ref-text">Ofwat (2024) <em>PR24 final determinations.</em> Birmingham: Ofwat.</span></div>
+    <div class="ref-item"><span class="ref-num">[23]</span> <span class="ref-text">Clarke, M. (2024) &lsquo;Ofwat sets out record &pound;88 billion upgrade&rsquo;, Ofwat.</span></div>
+    <div class="ref-item"><span class="ref-num">[24]</span> <span class="ref-text">Pappenberger, F. et al. (2015) &lsquo;The monetary benefit of early flood warnings in Europe&rsquo;, <em>Env. Sci. &amp; Policy</em>, 51, pp. 278&ndash;291.</span></div>
+    <div class="ref-item"><span class="ref-num">[25]</span> <span class="ref-text">Misra, A. et al. (2025) &lsquo;Mapping global floods with 10 years of satellite radar data&rsquo;, <em>Nature Communications</em>, 16, 5762.</span></div>
+    <div class="ref-item"><span class="ref-num">[26]</span> <span class="ref-text">Zakaria, A. et al. (2023) &lsquo;LoRaWAN-based IoT flood monitoring systems&rsquo;, <em>J. of Sensors</em>.</span></div>
+    <div class="ref-item"><span class="ref-num">[27]</span> <span class="ref-text">Nevo, S. et al. (2022) &lsquo;Flood forecasting with machine learning models&rsquo;, <em>Hydrology &amp; Earth System Sciences</em>.</span></div>
+    <div class="ref-item"><span class="ref-num">[28]</span> <span class="ref-text">Feng, D. et al. (2023) &lsquo;PINNs of the Saint-Venant equations&rsquo;, <em>Water Resources Research</em>, 59. | Tian, Y. et al. (2025) <em>WRR</em>, 61.</span></div>
+    <div class="ref-item"><span class="ref-num">[29]</span> <span class="ref-text">Lundberg, S. and Lee, S. (2017) &lsquo;A unified approach to interpreting model predictions&rsquo;, <em>NIPS Proceedings</em>. [SHAP]</span></div>
+    <div class="ref-item"><span class="ref-num">[30]</span> <span class="ref-text">Wang, Y. et al. (2025) &lsquo;Scenario&ndash;Learning&ndash;Decision Framework Enabled by LLMs&rsquo;, <em>Mathematics</em>, MDPI, 13(21).</span></div>
+    <div class="ref-item"><span class="ref-num">[31]</span> <span class="ref-text">Oddo, P. et al. (2024) &lsquo;ConvLSTM for flash flood prediction&rsquo;. [26% error reduction]</span></div>
+    <div class="ref-item"><span class="ref-num">[32]</span> <span class="ref-text">World Bank (n.d.) Early flood warning cost-benefit analysis.</span></div>
+    <div class="ref-item"><span class="ref-num">[33]</span> <span class="ref-text">UNDRR (2022) <em>Global Assessment Report on Disaster Risk Reduction.</em> [12hr warnings reduce damage 60%]</span></div>
+    <div class="ref-item"><span class="ref-num">[34]</span> <span class="ref-text">Satta Chiris, L. and Mishra, A. (2025) &lsquo;AURA: An Agent Autonomy Risk Assessment Framework&rsquo;, <em>arXiv:2510.15739</em>.</span></div>
+    <div class="ref-item"><span class="ref-num">[35]</span> <span class="ref-text">Satta Chiris, L. et al. (2026) &lsquo;Post-AGI World&rsquo;, <em>Exeter Economics Review</em>, 13 January.</span></div>
+    <div class="ref-item"><span class="ref-num">[36]</span> <span class="ref-text">Satta Chiris, L. (2025&ndash;26) Conf. presentations: DevFest London; Azure AI Connect; Dutch AI Conference; DevOpsCon &amp; MLCon; Exeter AI Society.</span></div>
+    <div class="ref-item"><span class="ref-num">[37]</span> <span class="ref-text">University of Exeter CWS (2024) <em>FDRI Programme (&pound;38M).</em> | Severn Trent (2024) AI-powered autonomous waste catchment.</span></div>
+    <div class="ref-item"><span class="ref-num">[38]</span> <span class="ref-text">ADEPT (2025) <em>Association of Directors of Environment, Economy, Planning &amp; Transport.</em></span></div>
+    <div class="ref-item"><span class="ref-num">[39]</span> <span class="ref-text">Kim, W.C. and Mauborgne, R. (2005) <em>Blue Ocean Strategy.</em> Harvard Business School Press.</span></div>
+    <div class="ref-item"><span class="ref-num">[40]</span> <span class="ref-text">DEFRA (2025) &lsquo;Ofwat to be abolished in biggest overhaul of water since privatisation.&rsquo; GOV.UK.</span></div>
+    <div class="ref-item"><span class="ref-num">[41]</span> <span class="ref-text">Goecks, V.G. and Waytowich, N.R. (2023) &lsquo;DisasterResponseGPT: LLMs for disaster response&rsquo;, <em>arXiv:2306.17271</em>.</span></div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- ══════════════════════════════════════════════════════════
+     NAVIGATION BAR
+     ══════════════════════════════════════════════════════════ -->
+<div class="nav-bar">
+  <button class="nav-btn" id="prev-btn" disabled>&larr; Prev</button>
+  <div class="nav-dots" id="nav-dots">
+    <button class="nav-dot active" data-i="0" title="The Crisis"></button>
+    <button class="nav-dot" data-i="1" title="Market Gap"></button>
+    <button class="nav-dot" data-i="2" title="Solution"></button>
+    <button class="nav-dot" data-i="3" title="Team"></button>
+    <button class="nav-dot" data-i="4" title="The Ask"></button>
+    <button class="nav-dot" data-i="5" title="References"></button>
+  </div>
+  <div class="nav-progress"><div class="nav-progress-fill" id="progress-fill" style="width:16.67%"></div></div>
+  <div class="slide-counter" id="counter">1 / 6</div>
+  <button class="nav-btn" id="next-btn">Next &rarr;</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCRIPTS
+     ══════════════════════════════════════════════════════════ -->
+
+<!-- Navigation Logic -->
+<script>
+(function(){
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const dots = Array.from(document.querySelectorAll('.nav-dot'));
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+  const counter = document.getElementById('counter');
+  const progressFill = document.getElementById('progress-fill');
+  const total = slides.length;
+  let current = 0;
+  let transitioning = false;
+
+  function goTo(index){
+    if(index < 0 || index >= total || index === current || transitioning) return;
+    transitioning = true;
+
+    const direction = index > current ? 'exit-up' : 'exit-down';
+    slides[current].classList.add(direction);
+    slides[current].classList.remove('active');
+    dots[current].classList.remove('active');
+
+    current = index;
+    slides[current].classList.add('active');
+    dots[current].classList.add('active');
+
+    counter.textContent = (current + 1) + ' / ' + total;
+    progressFill.style.width = ((current + 1) / total * 100) + '%';
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === total - 1;
+
+    setTimeout(function(){
+      slides.forEach(function(s){ s.classList.remove('exit-up','exit-down'); });
+      transitioning = false;
+    }, 700);
+  }
+
+  prevBtn.addEventListener('click', function(){ goTo(current - 1); });
+  nextBtn.addEventListener('click', function(){ goTo(current + 1); });
+  dots.forEach(function(dot){
+    dot.addEventListener('click', function(){ goTo(parseInt(dot.dataset.i)); });
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown'){
+      e.preventDefault(); goTo(current + 1);
+    }
+    if(e.key === 'ArrowLeft' || e.key === 'PageUp'){
+      e.preventDefault(); goTo(current - 1);
+    }
+    if(e.key === 'Home'){ e.preventDefault(); goTo(0); }
+    if(e.key === 'End'){ e.preventDefault(); goTo(total - 1); }
+  });
+
+  /* Touch/swipe support */
+  let touchStartX = 0;
+  document.addEventListener('touchstart', function(e){ touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', function(e){
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    if(Math.abs(dx) > 60){
+      if(dx < 0) goTo(current + 1);
+      else goTo(current - 1);
+    }
+  });
+})();
+</script>
+
+<!-- Lucide Icons -->
+<script>
+  if(typeof lucide !== 'undefined'){ lucide.createIcons(); }
+</script>
+
+<!-- Three.js Particle Background -->
+<script>
+(function(){
+  if(typeof THREE === 'undefined') return;
+  var canvas = document.getElementById('three-bg');
+  var renderer = new THREE.WebGLRenderer({ canvas:canvas, antialias:false, alpha:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  var scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x060a14, 0.014);
+
+  var camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
+  camera.position.set(0, 8, 60);
+  camera.lookAt(0, 0, 0);
+
+  /* Particles */
+  var N = 180;
+  var spread = 100;
+  var positions = new Float32Array(N * 3);
+  var velocities = [];
+
+  for(var i = 0; i < N; i++){
+    positions[i*3]   = (Math.random() - 0.5) * spread;
+    positions[i*3+1] = (Math.random() - 0.5) * spread * 0.45;
+    positions[i*3+2] = (Math.random() - 0.5) * 25;
+    velocities.push({
+      vx: (Math.random() - 0.5) * 0.005,
+      vy: (Math.random() - 0.5) * 0.003,
+      phase: Math.random() * Math.PI * 2,
+      amp: 0.005 + Math.random() * 0.007
+    });
+  }
+
+  var ptGeo = new THREE.BufferGeometry();
+  ptGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  var ptMat = new THREE.PointsMaterial({
+    size: 0.6, color: 0x0ea5e9, transparent: true, opacity: 0.4,
+    sizeAttenuation: true, blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  scene.add(new THREE.Points(ptGeo, ptMat));
+
+  /* Accent sparks */
+  var S = 30;
+  var sparkPos = new Float32Array(S * 3);
+  for(var j = 0; j < S; j++){
+    sparkPos[j*3]   = (Math.random() - 0.5) * spread * 0.7;
+    sparkPos[j*3+1] = (Math.random() - 0.5) * spread * 0.35;
+    sparkPos[j*3+2] = (Math.random() - 0.5) * 18;
+  }
+  var sGeo = new THREE.BufferGeometry();
+  sGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
+  scene.add(new THREE.Points(sGeo, new THREE.PointsMaterial({
+    size: 1.5, color: 0x38bdf8, transparent: true, opacity: 0.3,
+    sizeAttenuation: true, blending: THREE.AdditiveBlending, depthWrite: false
+  })));
+
+  /* Connection lines */
+  var MAX_SEGS = 1200;
+  var linePos = new Float32Array(MAX_SEGS * 6);
+  var lineGeo = new THREE.BufferGeometry();
+  lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3));
+  lineGeo.setDrawRange(0, 0);
+  var lineMat = new THREE.LineBasicMaterial({
+    color: 0x0ea5e9, transparent: true, opacity: 0.08,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  scene.add(new THREE.LineSegments(lineGeo, lineMat));
+
+  var MAX_DIST_SQ = 18 * 18;
+  function updateLines(){
+    var idx = 0;
+    for(var a = 0; a < N && idx < MAX_SEGS; a++){
+      for(var b = a + 1; b < N && idx < MAX_SEGS; b++){
+        var dx = positions[a*3] - positions[b*3];
+        var dy = positions[a*3+1] - positions[b*3+1];
+        if(dx*dx + dy*dy < MAX_DIST_SQ){
+          var k = idx * 6;
+          linePos[k]   = positions[a*3];   linePos[k+1] = positions[a*3+1]; linePos[k+2] = positions[a*3+2];
+          linePos[k+3] = positions[b*3];   linePos[k+4] = positions[b*3+1]; linePos[k+5] = positions[b*3+2];
+          idx++;
+        }
+      }
+    }
+    lineGeo.setDrawRange(0, idx * 2);
+    lineGeo.attributes.position.needsUpdate = true;
+  }
+
+  /* Mouse parallax */
+  var mx = 0, my = 0;
+  document.addEventListener('mousemove', function(e){
+    mx = (e.clientX / window.innerWidth - 0.5) * 2;
+    my = (e.clientY / window.innerHeight - 0.5) * 2;
+  });
+
+  /* Animation loop */
+  var t = 0;
+  var hs = spread / 2, hvs = spread * 0.225;
+  function animate(){
+    requestAnimationFrame(animate);
+    t += 0.006;
+    for(var i = 0; i < N; i++){
+      var v = velocities[i];
+      positions[i*3]   += v.vx + Math.sin(t * 0.22 + v.phase) * v.amp;
+      positions[i*3+1] += v.vy + Math.cos(t * 0.16 + v.phase * 1.3) * v.amp * 0.5;
+      if(positions[i*3]   >  hs)  positions[i*3]   -= spread;
+      if(positions[i*3]   < -hs)  positions[i*3]   += spread;
+      if(positions[i*3+1] >  hvs) positions[i*3+1] -= spread * 0.45;
+      if(positions[i*3+1] < -hvs) positions[i*3+1] += spread * 0.45;
+    }
+    ptGeo.attributes.position.needsUpdate = true;
+    updateLines();
+
+    camera.position.x = Math.sin(t * 0.04) * 3 + mx * 2;
+    camera.position.y = 8 + Math.cos(t * 0.035) * 1.5 - my * 1.5;
+    camera.lookAt(0, 0, 0);
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', function(){
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+})();
+</script>
+
+</body>
+</html>

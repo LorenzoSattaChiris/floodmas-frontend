@@ -116,6 +116,30 @@ export function fetchPrecipitationGrid(): Promise<PrecipitationGrid> {
   return fetchJSON('/weather/precipitation');
 }
 
+export function fetchRiverDischargeGrid(): Promise<RiverDischargeData> {
+  return fetchJSON('/weather/river-discharge');
+}
+
+// --- Soil Moisture ---
+
+export interface SoilMoisturePoint {
+  lat: number;
+  lon: number;
+  name: string;
+  moisture_0_7cm: number;
+  moisture_7_28cm: number;
+  temperature_c: number;
+}
+
+export interface SoilMoistureGrid {
+  points: SoilMoisturePoint[];
+  generatedAt: string;
+}
+
+export function fetchSoilMoistureGrid(): Promise<SoilMoistureGrid> {
+  return fetchJSON('/weather/soil-moisture');
+}
+
 export interface RiverDischargePoint {
   lat: number;
   lon: number;
@@ -155,6 +179,94 @@ export function fetchFloodDefences(bbox?: string): Promise<FeatureCollection> {
 export function fetchHistoricFloods(bbox?: string): Promise<FeatureCollection> {
   const query = bbox ? `?bbox=${bbox}` : '';
   return fetchJSON(`/features/historic-floods${query}`);
+}
+
+export function fetchMainRivers(bbox?: string): Promise<FeatureCollection> {
+  const query = bbox ? `?bbox=${bbox}` : '';
+  return fetchJSON(`/features/main-rivers${query}`);
+}
+
+export function fetchRiskLayerFeatures(layer: string, bbox?: string): Promise<FeatureCollection> {
+  const query = bbox ? `?bbox=${bbox}` : '';
+  return fetchJSON(`/features/risk/${layer}${query}`);
+}
+
+export function fetchTideGaugeStations(): Promise<StationsResponse> {
+  return fetchJSON('/stations?type=TideGauge&_limit=500');
+}
+
+export function fetchGroundwaterStations(): Promise<StationsResponse> {
+  return fetchJSON('/stations?parameter=groundwater-level&_limit=500');
+}
+
+// --- NRFA (National River Flow Archive) ---
+
+export interface NRFAStation {
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  river: string;
+  catchmentArea: number | null;
+}
+
+export interface NRFAStationsResponse {
+  stations: NRFAStation[];
+  generatedAt: string;
+}
+
+export function fetchNRFAStations(): Promise<NRFAStationsResponse> {
+  return fetchJSON('/nrfa/stations');
+}
+
+// --- EA Flood Warning Areas ---
+
+export interface FloodArea {
+  '@id': string;
+  county: string;
+  description: string;
+  envelope?: {
+    lowerCorner: string;
+    upperCorner: string;
+  };
+  fwdCode: string;
+  label: string;
+  lat: number;
+  long: number;
+  notation: string;
+  polygon?: string;
+  quickDialNumber: string;
+  riverOrSea: string;
+  type: string;
+}
+
+export interface FloodAreasResponse {
+  items: FloodArea[];
+}
+
+export function fetchFloodWarningAreas(): Promise<FloodAreasResponse> {
+  return fetchJSON('/flood-areas?type=FloodWarningArea');
+}
+
+// --- Extended Weather ---
+
+export interface ExtendedWeatherPoint {
+  lat: number;
+  lon: number;
+  name: string;
+  snow_depth_m: number;
+  wind_gusts_kmh: number;
+  surface_pressure_hpa: number;
+  cloud_cover_pct: number;
+}
+
+export interface ExtendedWeatherGrid {
+  points: ExtendedWeatherPoint[];
+  generatedAt: string;
+}
+
+export function fetchExtendedWeatherGrid(): Promise<ExtendedWeatherGrid> {
+  return fetchJSON('/weather/extended');
 }
 
 // --- Flood Feed (EA Warnings + Bluesky) ---
@@ -207,4 +319,356 @@ export interface HealthResponse {
 
 export function fetchHealth(): Promise<HealthResponse> {
   return fetchJSON('/health');
+}
+
+// --- Met Office Weather DataHub ---
+
+export interface MetOfficeForecastEntry {
+  time: string;
+  screenTemperature: number;
+  feelsLikeTemperature: number;
+  windSpeed10m: number;
+  windDirectionFrom10m: number;
+  windGustSpeed10m: number;
+  visibility: number;
+  screenRelativeHumidity: number;
+  mslp: number;
+  uvIndex: number;
+  significantWeatherCode: number;
+  precipitationRate: number;
+  totalPrecipAmount: number;
+  totalSnowAmount: number;
+  probOfPrecipitation: number;
+}
+
+export interface MetOfficeForecastPoint {
+  lat: number;
+  lon: number;
+  name: string;
+  modelRunDate: string;
+  current: MetOfficeForecastEntry;
+  next3h: MetOfficeForecastEntry | null;
+}
+
+export interface MetOfficeForecastGrid {
+  points: MetOfficeForecastPoint[];
+  generatedAt: string;
+}
+
+export function fetchMetOfficeForecast(): Promise<MetOfficeForecastGrid> {
+  return fetchJSON('/metoffice/forecast');
+}
+
+// --- Copernicus CDS ERA5-Land Reanalysis ---
+
+export interface CDSReanalysisPoint {
+  lat: number;
+  lon: number;
+  name: string;
+  temperature_c: number;
+  precipitation_mm_h: number;
+  soil_moisture_m3m3: number;
+  snow_cover_pct: number;
+  data_time: string;
+}
+
+export interface CDSReanalysisGrid {
+  points: CDSReanalysisPoint[];
+  generatedAt: string;
+  dataTimestamp: string;
+}
+
+export function fetchCDSReanalysis(): Promise<CDSReanalysisGrid> {
+  return fetchJSON('/cds/reanalysis');
+}
+
+// --- Ordnance Survey Names API ---
+
+export interface OSPlaceResult {
+  name: string;
+  type: string;
+  localType: string;
+  lat: number;
+  lon: number;
+  county: string;
+  region: string;
+  country: string;
+  populatedPlace: string;
+  postcodeDistrict: string;
+}
+
+export interface OSSearchResponse {
+  results: OSPlaceResult[];
+  totalResults: number;
+  query: string;
+}
+
+export function fetchOSPlaceSearch(query: string, limit = 10): Promise<OSSearchResponse> {
+  return fetchJSON(`/os/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+}
+
+// --- Agent Chat ---
+
+export interface ChatStartResponse {
+  sessionId: string;
+}
+
+export async function startChat(message: string): Promise<ChatStartResponse> {
+  const res = await fetch(`${BASE_URL}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message }),
+  });
+  if (!res.ok) throw new Error(`Chat API error: ${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+export function chatEventStreamUrl(sessionId: string): string {
+  return `${BASE_URL}/chat/${sessionId}`;
+}
+
+// --- Agent Cards ---
+
+export interface AgentCardResponse {
+  name: string;
+  description: string;
+  version: string;
+  role: 'supervisor' | 'worker';
+  agentType: string;
+  iconUrl: string;
+  skills: Array<{
+    id: string;
+    name: string;
+    description: string;
+    tags: string[];
+    examples: string[];
+  }>;
+  capabilities: {
+    streaming: boolean;
+    tools?: string[];
+    multiAgentDelegation?: boolean;
+    proactiveMonitoring?: boolean;
+  };
+}
+
+export function fetchAgentCards(): Promise<AgentCardResponse[]> {
+  return fetchJSON('/agents');
+}
+
+// --- Proactive Monitoring ---
+
+export async function startProactiveScan(): Promise<ChatStartResponse> {
+  const res = await fetch(`${BASE_URL}/proactive/scan`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) throw new Error(`Proactive API error: ${res.status}`);
+  return res.json();
+}
+
+export function proactiveEventStreamUrl(sessionId: string): string {
+  return `${BASE_URL}/proactive/${sessionId}`;
+}
+
+// --- Report Generation ---
+
+export async function startReportGeneration(conversationSummary: string): Promise<ChatStartResponse> {
+  const res = await fetch(`${BASE_URL}/report`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ conversationSummary }),
+  });
+  if (!res.ok) throw new Error(`Report API error: ${res.status}`);
+  return res.json();
+}
+
+export function reportEventStreamUrl(sessionId: string): string {
+  return `${BASE_URL}/report/${sessionId}`;
+}
+
+// --- Local Datasets (GOV.UK / NAO / Defra) ---
+
+export interface FloodRiskAreasGeoJSON {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    geometry: { type: string; coordinates: unknown };
+    properties: {
+      fra_id: string;
+      fra_name: string;
+      frr_cycle: number;
+      flood_source: string;
+    };
+  }>;
+}
+
+export function fetchFloodRiskAreas(): Promise<FloodRiskAreasGeoJSON> {
+  return fetchJSON('/datasets/flood-risk-areas');
+}
+
+export interface DatasetSummary {
+  defences: { regions: number; utlas: number };
+  spend: { regions: number; utlas: number };
+  homesProtected: { regions: number; utlas: number };
+  propertiesAtRisk: { constituencies: number; ltlas: number; utlas: number };
+  floodRiskAreas: { features: number };
+  postcodeRisk: { postcodes: number };
+  propertyRisk: { totalProperties: number };
+}
+
+export function fetchDatasetSummary(): Promise<DatasetSummary> {
+  return fetchJSON('/datasets/summary');
+}
+
+// --- RoFRS Postcode Risk Lookup ---
+
+interface RiskBandBreakdown {
+  residential: number;
+  nonResidential: number;
+  unclassified: number;
+  total: number;
+}
+
+export interface PostcodeRisk {
+  postcode: string;
+  totalProperties: number;
+  residential: number;
+  nonResidential: number;
+  unclassified: number;
+  veryLow: RiskBandBreakdown;
+  low: RiskBandBreakdown;
+  medium: RiskBandBreakdown;
+  high: RiskBandBreakdown;
+}
+
+export function fetchPostcodeRisk(postcode: string): Promise<PostcodeRisk> {
+  return fetchJSON(`/datasets/postcode-risk?pc=${encodeURIComponent(postcode)}`);
+}
+
+export function fetchPostcodeRiskSearch(query: string, limit = 20): Promise<PostcodeRisk[]> {
+  return fetchJSON(`/datasets/postcode-risk/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+}
+
+// --- RoFRS Property Risk Summary ---
+
+export interface PropertyRiskSummary {
+  totalProperties: number;
+  byType: { residential: number; nonResidential: number; unclassified: number };
+  byRisk: { veryLow: number; low: number; medium: number; high: number };
+  byTypeAndRisk: Record<string, Record<string, number>>;
+}
+
+export function fetchPropertyRiskSummary(): Promise<PropertyRiskSummary> {
+  return fetchJSON('/datasets/properties-risk-summary');
+}
+
+// --- LLFA (Lead Local Flood Authority) Boundaries & Strategy Info ---
+
+export interface LLFAStrategyInfo {
+  yearPublished: number | null;
+  hasBeenUpdated: string;
+  isLivingDocument: string;
+  activePeriod: string;
+  wordCount: number | null;
+  hasCoverSheet: string;
+  externalConsultant: string;
+  isCoastalArea: string;
+  stakeholders: {
+    idbMentions: number | null;
+    nationalHighwaysMentions: number | null;
+    waterCompanyMentions: string;
+    rfccMentions: number | null;
+    defraMentions: number | null;
+    eaMentions: number | null;
+    riparianMentions: number | null;
+    publicMentions: number | null;
+    consultationMentions: number | null;
+  };
+  quality: {
+    clearObjectives: string;
+    smartObjectives: string;
+    monitoringEvaluation: string;
+    referencesSFRAs: string;
+    climateChangeScenarios: string;
+    climateChangeRisk: string;
+    surfaceWaterMeasures: string;
+    adaptationPathways: string;
+    defenceAssetRegister: string;
+    populationChange: string;
+    fcermAlignment: string;
+  };
+  termMentions: Record<string, number | string | null>;
+  coastal: {
+    smpMentions: number | null;
+    slrMentions: number | null;
+  };
+}
+
+export interface LLFAFeatureProperties {
+  CTYUA24CD: string;
+  CTYUA24NM: string;
+  CTYUA24NMW: string;
+  BNG_E: number;
+  BNG_N: number;
+  LONG: number;
+  LAT: number;
+  hasStrategy: boolean;
+  strategy?: LLFAStrategyInfo;
+}
+
+export interface LLFAGeoJSON {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    geometry: { type: string; coordinates: unknown };
+    properties: LLFAFeatureProperties;
+  }>;
+}
+
+export function fetchLLFABoundaries(): Promise<LLFAGeoJSON> {
+  return fetchJSON('/llfa');
+}
+
+export function fetchLLFAInfo(code: string): Promise<LLFAFeatureProperties> {
+  return fetchJSON(`/llfa/${encodeURIComponent(code)}`);
+}
+
+// --- ONS IMD 2019 (Index of Multiple Deprivation) ---
+
+export interface IMDFeatureProperties {
+  lsoaCode: string;
+  lsoaName: string;
+  ladCode: string;
+  ladName: string;
+  imdScore: number;
+  imdRank: number;
+  imdDecile: number;
+  incomeScore: number;
+  incomeDecile: number;
+  employmentScore: number;
+  employmentDecile: number;
+  educationScore: number;
+  educationDecile: number;
+  healthScore: number;
+  healthDecile: number;
+  crimeScore: number;
+  crimeDecile: number;
+  barriersScore: number;
+  barriersDecile: number;
+  livingEnvScore: number;
+  livingEnvDecile: number;
+  totalPop: number;
+}
+
+export interface IMDGeoJSON {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    geometry: { type: string; coordinates: unknown };
+    properties: IMDFeatureProperties;
+  }>;
+}
+
+export function fetchIMDBoundaries(bbox: string): Promise<IMDGeoJSON> {
+  return fetchJSON(`/imd?bbox=${encodeURIComponent(bbox)}`);
 }

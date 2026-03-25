@@ -1,9 +1,20 @@
-# FloodMAS — Intelligence Platform Client
+<div align="center">
 
-A real-time flood intelligence dashboard for the United Kingdom. Visualises live Environment Agency data, weather forecasts, and social media signals on an interactive satellite map — with a cinematic historical timeline spanning 1947–2024.
+# FloodMAS Client
 
-**Live:** [floodmas.lsattachiris.com](https://floodmas.lsattachiris.com)  
-**API:** [api.floodmas.lsattachiris.com](https://api.floodmas.lsattachiris.com)
+**Real-time UK flood intelligence dashboard**
+
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vite.dev/)
+[![MapLibre GL](https://img.shields.io/badge/MapLibre_GL-4.7-396CB2?style=flat-square)](https://maplibre.org/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](../LICENSE)
+
+React SPA for [FloodMAS](https://floodmas.lsattachiris.com) — 28 toggleable map layers, AI agent chat, historical timeline, and real-time flood feeds.  
+Visualises live Environment Agency data, weather forecasts, risk models, local datasets, AI agent analysis, and social media signals on an interactive satellite map, with postcode-level risk search, LLFA strategy cards, and a cinematic historical timeline spanning 1947–2024.  
+**Live:** [floodmas.lsattachiris.com](https://floodmas.lsattachiris.com) · **API:** [api.floodmas.lsattachiris.com](https://api.floodmas.lsattachiris.com)
+
+</div>
 
 ---
 
@@ -12,9 +23,10 @@ A real-time flood intelligence dashboard for the United Kingdom. Visualises live
 - [Overview](#overview)
 - [Tech Stack](#tech-stack)
 - [Features](#features)
+- [Map Layers (28)](#map-layers-28)
+- [Data Sources & Datasets](#data-sources--datasets)
 - [Project Structure](#project-structure)
 - [Architecture](#architecture)
-- [Layer System](#layer-system)
 - [Getting Started](#getting-started)
 - [Configuration](#configuration)
 - [Scripts](#scripts)
@@ -25,7 +37,7 @@ A real-time flood intelligence dashboard for the United Kingdom. Visualises live
 
 ## Overview
 
-FloodMAS Client is a single-page application built with React 19 and Vite. It renders a full-screen MapLibre GL map overlaid with floating dark-glass UI panels. All live data is fetched from the [FloodMAS API server](https://github.com/LorenzoSattaChiris/floodmas) and cached client-side via TanStack Query.
+FloodMAS Client is a single-page application built with React 19 and Vite. It renders a full-screen MapLibre GL map overlaid with floating dark-glass UI panels. All live data is fetched from the FloodMAS API server and cached client-side via TanStack Query with per-hook polling intervals.
 
 The application is entirely read-only and stateless — no authentication is required and no user data is stored.
 
@@ -38,9 +50,10 @@ The application is entirely read-only and stateless — no authentication is req
 | Framework | React 19 |
 | Build tool | Vite 6 + TypeScript 5.6 |
 | Map engine | MapLibre GL JS 4.7 |
-| Map tiles | MapTiler Hybrid Satellite |
+| Map tiles | MapTiler Hybrid Satellite (default), 3 OS Maps variants |
 | Server state | TanStack React Query 5 |
 | Client state | Zustand 5 |
+| Markdown | react-markdown 10 + remark-gfm |
 | Styles | Tailwind CSS 3.4 |
 | Toasts | Sonner 1.7 |
 | Deployment | Firebase Hosting |
@@ -49,39 +62,140 @@ The application is entirely read-only and stateless — no authentication is req
 
 ## Features
 
-### Live Map Layers (9 toggleable)
-- **Flood Warnings & Alerts** — Active EA warnings rendered as colour-coded circles (red = severe, orange = warning, yellow = alert) with pulsing halos. Popup includes full message text, affected area, and timestamp.
-- **Water Level Stations** — 500+ EA river gauges colour-coded green/amber/red against typical range thresholds. Popup shows current reading, typical range min/max, and record max.
-- **Rainfall Stations** — 500+ EA rain gauges across England.
-- **Precipitation Grid** — Open-Meteo current hourly precipitation at 30 UK grid points. Circle size encodes intensity; popup shows 3h/6h forecast, temperature, and wind speed.
-- **River Discharge Forecast** — Open-Meteo 72-hour river discharge forecast.
-- **Risk — Rivers & Sea** — EA WMS raster: modelled flood risk probability from rivers and the sea.
-- **Risk — Surface Water** — EA WMS raster: modelled surface water flooding risk.
-- **Flood Defences** — Defra spatial flood defence infrastructure: walls, embankments, and barriers.
-- **Historic Flood Outlines** — EA recorded flood event footprints rendered as translucent orange fills.
+### Interactive Map (28 Layers)
+Full-screen satellite map with 28 independently toggleable layers across 4 groups (Live, Weather, Risk, Reference). Each layer has click popups with contextual information, data-driven styling, and automatic polling.
+
+### AI Agent Chat
+A sliding panel providing access to a multi-agent system (Supervisor + 4 specialist workers):
+- **Chat** — Natural-language flood queries with SSE-streamed responses, rendered as Markdown
+- **Proactive Scan** — One-click flood risk assessment across the entire UK
+- **Report Generation** — Professional flood reports from conversation context
+- Agent status indicators show which specialist (Monitoring, Forecasting, Risk Analysis, Emergency Response) is active
+
+### Place Search + Postcode Risk
+Combined OS place name search + postcode flood risk lookup:
+- **Place search** — OS Names API: type a location name → results with coordinates → fly-to on click
+- **Postcode risk** — Type a UK postcode → see flood risk breakdown (total properties, residential/non-residential × very-low/low/medium/high) with colour-coded risk badges
+
+### LLFA Information Cards
+Click any LLFA boundary on the map to see a comprehensive information card:
+- Authority name, ONS code, type (county / unitary)
+- LFRMS strategy status (year published, living document, external consultant)
+- Quality grades (A/B/C badges) for: clear objectives, SMART objectives, M&E, climate change, surface water, FCERM alignment
+- Stakeholder mention counts (EA, DEFRA, Water Companies, RFCCs, Public)
+- Key term counts (SuDS, NFM, NBS, resilience, etc.)
 
 ### Flood Feed
 Real-time right panel combining two sources:
-- **EA Warnings mode** — Official Environment Agency flood warnings with severity badges, highlight river/county metadata, and NLP keyword colouring.
-- **All Sources mode** — Merges EA warnings with live Bluesky social posts. Posts show author avatar, handle, like/repost counts, and direct links.
+- **EA Warnings mode** — Official EA flood warnings with severity badges, river/county metadata, and NLP keyword colouring
+- **All Sources mode** — Merges EA warnings with live Bluesky social posts (avatar, handle, engagement counts, direct links)
 
-NLP semantic highlighting segments text into five categories: hazard terms, severity descriptors, alert keywords, weather vocabulary, and location features — each rendered in a distinct colour.
+NLP semantic highlighting segments text into five categories (hazard, severity, alert, weather, location) each in a distinct colour.
 
 ### Historical Timeline (1947–2024)
-An animated cinematic timeline accessible from the bottom bar:
-- Stepped playback at 0.5×, 1×, 2×, or 4× speed
-- Cinematic **intro sequence** — camera flies to the UK overview at 45° tilt
-- Per-event **fly-to** animation with pitch and bearing variation
-- Cumulative dot trail: all previous events shown at reduced opacity, current event highlighted with a pulsing ring
-- Affected location dots for each event plotted on the map
-- Event info panel: name, year, cause, description, impact text
-- Cinematic **outro summary** — aggregate stats: major floods, lives lost, properties flooded, economic damage
+Cinematic animated timeline:
+- Stepped playback (0.5×, 1×, 2×, 4×)
+- Intro sequence: camera flies to UK at 45° tilt
+- Per-event fly-to with pitch/bearing variation
+- Cumulative dot trail with pulsing current event
+- Event info panel: name, year, cause, description, impact
+- Outro summary: aggregate stats (floods, lives lost, properties, economic damage)
 - Scrubber track with year markers and click-to-seek
 
 ### Header
-- Live ticking clock (UK time, updated every second)
-- Data source status indicators: EA API and Bluesky with green/amber dot
-- Panel toggle buttons for left (layer control) and right (flood feed) panels
+- Live UK clock (ticks every second)
+- Data source status: EA API, Bluesky, Met Office — green/amber indicators
+- Panel toggle buttons (Layer Control left, Social Feed right)
+
+---
+
+## Map Layers (28)
+
+All layers defined in `src/config/layers.ts`. Grouped by visual hierarchy (reference at bottom, live on top).
+
+### Live — Real-time Data (6 layers)
+
+| # | ID | Label | Source | Colour | Default |
+|---|---|-------|--------|--------|---------|
+| 1 | `flood-warnings` | Flood Warnings & Alerts | EA Flood Monitoring API | `#dc2626` | ✅ ON |
+| 2 | `water-level-stations` | Water Level Stations | EA Flood Monitoring API | `#0ea5e9` | ✅ ON |
+| 3 | `rainfall-stations` | Rainfall Stations | EA Flood Monitoring API | `#8b5cf6` | OFF |
+| 4 | `tidal-stations` | Tide Gauge Stations | EA Flood Monitoring API | `#06b6d4` | OFF |
+| 5 | `groundwater-stations` | Groundwater Stations | EA Flood Monitoring API | `#0d9488` | OFF |
+| 6 | `nrfa-stations` | NRFA Flow Gauges | UKCEH NRFA | `#e11d48` | OFF |
+
+### Weather — Forecast & Conditions (6 layers)
+
+| # | ID | Label | Source | Colour | Default |
+|---|---|-------|--------|--------|---------|
+| 7 | `precipitation` | Precipitation (Current) | Open-Meteo Forecast | `#3b82f6` | ✅ ON |
+| 8 | `river-discharge` | River Discharge Forecast | Open-Meteo Flood | `#14b8a6` | OFF |
+| 9 | `soil-moisture` | Soil Moisture | Open-Meteo Forecast | `#a16207` | OFF |
+| 10 | `extended-weather` | Snow & Wind Gusts | Open-Meteo Forecast | `#60a5fa` | OFF |
+| 11 | `met-office-forecast` | Met Office Forecast | Met Office DataHub | `#f59e0b` | OFF |
+| 12 | `cds-reanalysis` | ERA5-Land Reanalysis | Copernicus CDS | `#7c3aed` | OFF |
+
+### Risk — Modelled & Statutory (9 layers)
+
+| # | ID | Label | Source | Colour | Default |
+|---|---|-------|--------|--------|---------|
+| 13 | `risk-rivers-sea` | Risk — Rivers & Sea | EA WMS Tiles | `#7c3aed` | OFF |
+| 14 | `risk-surface-water` | Risk — Surface Water | EA WMS Tiles | `#06b6d4` | OFF |
+| 15 | `flood-zone-2` | Flood Zone 2 (Medium) | EA WMS Tiles | `#818cf8` | OFF |
+| 16 | `flood-zone-3` | Flood Zone 3 (High) | EA WMS Tiles | `#c084fc` | OFF |
+| 17 | `reservoir-dry` | Reservoir Extents (Dry) | EA WMS Tiles | `#f472b6` | OFF |
+| 18 | `reservoir-wet` | Reservoir Extents (Wet) | EA WMS Tiles | `#fb7185` | OFF |
+| 19 | `flood-warning-areas` | Flood Warning Areas | EA Flood Monitoring API | `#fbbf24` | OFF |
+| 20 | `flood-risk-areas` | Flood Risk Areas (Defra) | Local Dataset (BNG→WGS84) | `#e879f9` | OFF |
+| 21 | `llfa-boundaries` | LLFA Boundaries | Local Dataset (GeoJSON+XLSX) | `#10b981` | OFF |
+
+### Reference — Static / Historical (7 layers)
+
+| # | ID | Label | Source | Colour | Default |
+|---|---|-------|--------|--------|---------|
+| 22 | `flood-defences` | Flood Defences | Defra ArcGIS FeatureServer | `#22c55e` | OFF |
+| 23 | `historic-floods` | Historic Flood Outlines | Defra ArcGIS FeatureServer | `#f97316` | OFF |
+| 24 | `main-rivers` | Main Rivers | Defra ArcGIS FeatureServer | `#2563eb` | OFF |
+| 25 | `os-map-light` | OS Light Map | Ordnance Survey ZXY Tiles | `#94a3b8` | OFF |
+| 26 | `os-map-road` | OS Road Map | Ordnance Survey ZXY Tiles | `#64748b` | OFF |
+| 27 | `os-map-outdoor` | OS Outdoor Map | Ordnance Survey ZXY Tiles | `#059669` | OFF |
+
+Layer 28 (timeline dots) is rendered dynamically during timeline playback.
+
+---
+
+## Data Sources & Datasets
+
+All data is fetched from the FloodMAS API server, which proxies, caches, and serves:
+
+### External APIs (via server proxy)
+
+| # | Source | Auth | Data Consumed |
+|---|--------|------|---------------|
+| 1 | **EA Flood Monitoring API** | None | Flood warnings, station readings (level/rainfall/tidal/groundwater), flood areas |
+| 2 | **Open-Meteo Forecast** | None | Precipitation grid, soil moisture, snow depth, wind gusts, pressure |
+| 3 | **Open-Meteo Flood** | None | 72h river discharge forecast |
+| 4 | **Defra ArcGIS Online** | None | Flood defences, historic flood outlines, main rivers (FeatureServer) |
+| 5 | **EA WMS Tile Services** | None | 6 risk raster layers (rivers/sea, surface water, zones 2/3, reservoir dry/wet) — consumed directly as XYZ tiles |
+| 6 | **Bluesky AT Protocol** | None | Public social flood posts |
+| 7 | **UKCEH NRFA** | None | National River Flow Archive gauging stations (~1,500+) |
+| 8 | **Met Office DataHub** | API key | Official hourly site-specific forecast (temperature, wind, rain probability, UV) |
+| 9 | **Copernicus CDS** | API key | ERA5-Land reanalysis (temperature, precipitation, soil moisture, snow cover) |
+| 10 | **Ordnance Survey** | API key | Place name search (Names API) + 3 ZXY tile basemaps (Light, Road, Outdoor) |
+| 11 | **MapTiler** | API key | Hybrid satellite basemap tiles |
+
+Sources 1–7 are free public APIs. Sources 8–11 require API keys (configured server-side or in `layers.ts`).
+
+### Local Datasets (via server `/api/datasets` + `/api/llfa`)
+
+| Dataset | Content | Size | Use in Client |
+|---|---|---|---|
+| **Flood Risk Areas** | Defra APSFR polygons (BNG→WGS84) | 189 polygons | Layer 20: purple fill on map |
+| **Flood Management (NAO)** | Defence condition, spend, homes protected, properties at risk by region/UTLA/LTLA | 9 CSV files | Statistics in PlaceSearch / Agent context |
+| **Flood Risk Zone (GOV.UK)** | Defence & property counts by UTLA/constituency | 2 CSV files | Supplementary statistics |
+| **RoFRS Postcodes** | Flood risk per postcode (269K postcodes) | 269K rows | PlaceSearch postcode risk lookup |
+| **RoFRS Properties** | Property-level flood risk aggregation | 2.4M rows | National property risk summary |
+| **LLFA Boundaries** | 218 county/UA boundaries + Russell LFRMS audit | GeoJSON + XLSX | Layer 21: green boundaries + info cards |
 
 ---
 
@@ -89,35 +203,40 @@ An animated cinematic timeline accessible from the bottom bar:
 
 ```
 client/
-├── .env.production          # Production API URL (VITE_API_URL)
+├── .env.production              # Production API URL (VITE_API_URL)
 ├── index.html
-├── vite.config.ts           # Dev server + /api proxy
+├── vite.config.ts               # Dev server + /api proxy
 ├── tailwind.config.js
 ├── postcss.config.js
 ├── tsconfig.json
 └── src/
-    ├── main.tsx             # React root, QueryClient provider
-    ├── App.tsx              # Layout: map + floating UI
-    ├── index.css            # Tailwind directives + design tokens
+    ├── main.tsx                 # React root, QueryClient provider
+    ├── App.tsx                  # Layout: map + floating UI
+    ├── index.css                # Tailwind directives + design tokens
     ├── components/
-    │   ├── FloodMap.tsx     # MapLibre GL map + all data layers
-    │   ├── Header.tsx       # Top bar: brand, status, clock, toggles
-    │   ├── LayerControl.tsx # Left panel: layer visibility toggles
-    │   ├── SocialFeed.tsx   # Right panel: EA warnings + Bluesky feed
-    │   ├── Timeline.tsx     # Historical timeline overlay
-    │   └── MapLegend.tsx    # Floating bottom-left legend
+    │   ├── FloodMap.tsx         # MapLibre GL map + 28 layer sources/renderers
+    │   ├── Header.tsx           # Top bar: brand, status indicators, clock, toggles
+    │   ├── LayerControl.tsx     # Left panel: 28 layer toggles with counts & groups
+    │   ├── MapLegend.tsx        # Floating bottom-left legend (all active layers)
+    │   ├── SocialFeed.tsx       # Right panel: EA warnings + Bluesky feed
+    │   ├── Timeline.tsx         # Historical timeline overlay (1947–2024)
+    │   ├── AgentChat.tsx        # AI agent panel: chat, proactive scan, report gen
+    │   ├── PlaceSearch.tsx      # OS place search + postcode risk lookup
+    │   └── Tip.tsx              # Portal tooltip component
     ├── config/
-    │   └── layers.ts        # Layer IDs, labels, groups, WMS URLs
+    │   └── layers.ts            # 28 LayerConfigs, WMS URLs, OS tile URLs, MapTiler key
     ├── context/
-    │   └── MapContext.tsx   # maplibregl.Map ref shared via context
+    │   └── MapContext.tsx        # maplibregl.Map ref shared via React context
     ├── data/
-    │   └── floodHistory.ts  # Curated UK flood events 1947–2024
+    │   └── floodHistory.ts      # Curated UK flood events 1947–2024 (timeline data)
     ├── hooks/
-    │   └── useFloodData.ts  # TanStack Query hooks for all API calls
+    │   ├── useFloodData.ts      # 24 TanStack Query hooks for all API endpoints
+    │   └── useAgentChat.ts      # SSE streaming hook for agent chat sessions
     ├── services/
-    │   └── api.ts           # Typed fetch wrappers + TypeScript interfaces
+    │   └── api.ts               # Typed fetch wrappers + TypeScript interfaces (40+ types)
     └── stores/
-        └── layerStore.ts    # Zustand: layer visibility + panel state
+        ├── layerStore.ts        # Zustand: visibleLayers Set + panel open/close
+        └── agentChatStore.ts    # Zustand: agent messages, events, streaming state
 ```
 
 ---
@@ -127,15 +246,17 @@ client/
 ### Component Tree
 
 ```
-<QueryClientProvider>          ← TanStack Query (global cache)
-  <MapProvider>                ← MapContext (map ref)
+<QueryClientProvider>              ← TanStack Query (global cache)
+  <MapProvider>                    ← MapContext (map ref)
     <App>
-      <FloodMap />             ← Full-screen MapLibre map (z-index: 0)
-      <Header />               ← Floating top bar
-      <LayerControl />         ← Floating left panel
-      <SocialFeed />           ← Floating right panel
-      <MapLegend />            ← Floating bottom-left
-      <Timeline />             ← Floating bottom overlay
+      <FloodMap />                 ← Full-screen MapLibre map (z-index: 0)
+      <Header />                   ← Floating top bar
+      <LayerControl />             ← Floating left panel
+      <SocialFeed />               ← Floating right panel
+      <MapLegend />                ← Floating bottom-left
+      <Timeline />                 ← Floating bottom overlay
+      <AgentChat />                ← Sliding right panel (AI agents)
+      <PlaceSearch />              ← Floating top search bar
     </App>
   </MapProvider>
 </QueryClientProvider>
@@ -145,70 +266,77 @@ client/
 
 | Store | Technology | Contents |
 |---|---|---|
-| Server state | TanStack Query | API data, loading/error states, cache TTLs |
-| Layer state | Zustand | `visibleLayers: Set<string>`, panel open/close |
-| Map ref | React Context | `maplibregl.Map` instance shared across components |
+| Server state | TanStack Query | API data, loading/error states, per-hook cache TTLs |
+| Layer state | Zustand (`layerStore`) | `visibleLayers: Set<string>`, left/right panel open |
+| Agent state | Zustand (`agentChatStore`) | Messages, SSE events, agent statuses, streaming/proactive/report flags |
+| Map ref | React Context | `maplibregl.Map` instance shared across all components |
 
-### Data Fetching (polling intervals)
+### Data Fetching — All 24 Hooks
 
-| Hook | Endpoint | Interval |
-|---|---|---|
-| `useFloodWarnings` | `GET /api/floods` | 5 min |
-| `useWaterLevelStations` | `GET /api/stations?parameter=level` | 15 min |
-| `useRainfallStations` | `GET /api/stations?parameter=rainfall` | 15 min |
-| `useLatestReadings` | `GET /api/stations/readings/latest` | 5 min |
-| `usePrecipitationGrid` | `GET /api/weather/precipitation` | 30 min |
-| `useFloodDefences` | `GET /api/features/defences` | 60 min |
-| `useHistoricFloods` | `GET /api/features/historic-floods` | 60 min |
-| `useFloodFeed` | `GET /api/social/feed` | 2 min |
-| `useHealth` | `GET /api/health` | 30 sec |
+| Hook | Endpoint | Interval | Notes |
+|---|---|---|---|
+| `useFloodWarnings` | `GET /api/floods` | 5 min | Active EA warnings |
+| `useWaterLevelStations` | `GET /api/stations?parameter=level` | 15 min | ~500 river gauges |
+| `useRainfallStations` | `GET /api/stations?parameter=rainfall` | 15 min | ~500 rain gauges |
+| `useTideGaugeStations` | `GET /api/stations` (tidal filter) | 15 min | Coastal tide gauges |
+| `useGroundwaterStations` | `GET /api/stations` (groundwater filter) | 15 min | Groundwater monitors |
+| `useLatestReadings` | `GET /api/stations/readings/latest` | 5 min | Most recent value per station |
+| `useStationReadings` | `GET /api/stations/:id/readings` | 5 min | Time-series for one station |
+| `usePrecipitationGrid` | `GET /api/weather/precipitation` | 30 min | 30-point UK grid |
+| `useRiverDischargeGrid` | `GET /api/weather/river-discharge` | 30 min | Grid-based discharge forecast |
+| `useRiverDischarge` | `GET /api/weather/river-discharge` | 30 min | Custom coord-based discharge |
+| `useSoilMoistureGrid` | `GET /api/weather/soil-moisture` | 60 min | Soil saturation 0–7 cm |
+| `useExtendedWeather` | `GET /api/weather/extended` | 30 min | Snow, wind, pressure, cloud |
+| `useMetOfficeForecast` | `GET /api/metoffice/forecast` | 30 min | Official Met Office forecast |
+| `useCDSReanalysis` | `GET /api/cds/reanalysis` | 60 min | ERA5-Land reanalysis |
+| `useFloodDefences` | `GET /api/features/defences` | 60 min | Defence infrastructure |
+| `useHistoricFloods` | `GET /api/features/historic-floods` | 60 min | Historic flood outlines |
+| `useMainRivers` | `GET /api/features/main-rivers` | 60 min | Statutory main rivers |
+| `useNRFAStations` | `GET /api/nrfa/stations` | 60 min | ~1,500 gauging stations |
+| `useFloodWarningAreas` | `GET /api/flood-areas?type=FloodWarningArea` | 60 min | Warning area boundaries |
+| `useFloodFeed` | `GET /api/social/feed` | 2 min | Combined EA + Bluesky |
+| `useHealth` | `GET /api/health` | 30 sec | Service connectivity |
+| `useFloodRiskAreas` | `GET /api/datasets/flood-risk-areas` | ∞ (static) | Defra APSFR polygons |
+| `usePostcodeRisk` | `GET /api/datasets/postcode-risk` | ∞ (static) | Single postcode lookup |
+| `usePropertyRiskSummary` | `GET /api/datasets/properties-risk-summary` | ∞ (static) | National property stats |
+| `useLLFABoundaries` | `GET /api/llfa` | ∞ (static) | 218 LLFA boundary polygons |
 
 ### Map Layer Rendering Order
 
-MapLibre GL layers are registered in strict z-order to ensure visual correctness:
+MapLibre GL layers follow a strict z-order (bottom to top):
 
 ```
-8. Flood warnings (highest priority — top)
-7. Water level stations
-6. Rainfall stations
-5. Precipitation grid
-4. River discharge forecast
-3. Flood defences
-2. Historic flood outlines
-1. WMS risk rasters (bottom)
+── Reference (bottom) ──
+  OS Map tiles (Light / Road / Outdoor)
+  Historic Flood Outlines (orange fill)
+  Main Rivers (blue polylines)
+  Flood Defences (green lines)
+── Risk ──
+  WMS risk rasters (6 EA tile layers)
+  Flood Warning Areas (amber outlines)
+  Flood Risk Areas (purple fill)
+  LLFA Boundaries (green/grey data-driven fill)
+── Weather ──
+  Soil Moisture, Extended Weather, CDS, Met Office (circles)
+  River Discharge (teal circles)
+  Precipitation (blue circles, size = intensity)
+── Live (top) ──
+  NRFA Flow Gauges
+  Groundwater / Tidal / Rainfall stations
+  Water Level Stations
+  Flood Warnings (red/orange/yellow circles + pulsing halos)
 ```
 
-Each data layer is controlled by `useLayerStore`. When `visibleLayers` changes, a `useEffect` in `FloodMap` syncs `visibility: visible/none` on every corresponding MapLibre layer.
+Each layer is toggled via `useLayerStore`. A `useEffect` in `FloodMap` syncs `visibility: visible/none` on every MapLibre layer when `visibleLayers` changes.
 
 ### API URL Resolution
-
-In development, Vite proxies `/api` → `http://localhost:3000`. In production, `VITE_API_URL` is read at build time and baked into the bundle:
 
 ```
 Development:  fetch('/api/floods')       → Vite proxy → localhost:3000
 Production:   fetch('https://api.floodmas.lsattachiris.com/api/floods')
 ```
 
----
-
-## Layer System
-
-Layer definitions live in `src/config/layers.ts`. Each layer has:
-
-| Property | Type | Description |
-|---|---|---|
-| `id` | `string` | Unique identifier used in Zustand store and MapLibre |
-| `label` | `string` | Display name in `LayerControl` |
-| `group` | `'live' \| 'weather' \| 'risk' \| 'reference'` | Panel grouping |
-| `color` | `string` | Hex colour for the toggle dot |
-| `defaultVisible` | `boolean` | Initial visibility on load |
-| `description` | `string?` | Tooltip text in the layer panel |
-
-To add a new layer:
-1. Add an entry to `LAYER_CONFIGS` in `layers.ts`
-2. Register the MapLibre source and layer(s) inside the `map.on('load', ...)` block in `FloodMap.tsx`
-3. Add the layer ID to the `layerMapping` object in `syncVisibility()`
-4. Add a data-sync `useEffect` if the layer requires live data
+In development, Vite proxies `/api` → `http://localhost:3000`. In production, `VITE_API_URL` is baked into the bundle at build time.
 
 ---
 
@@ -217,13 +345,11 @@ To add a new layer:
 ### Prerequisites
 
 - Node.js 18+
-- The [FloodMAS API server](https://github.com/LorenzoSattaChiris/floodmas) running locally on port 3000
+- The FloodMAS API server running locally on port 3000
 
 ### Installation
 
 ```bash
-git clone https://github.com/LorenzoSattaChiris/floodmas-client
-cd floodmas-client
 npm install
 ```
 
@@ -233,7 +359,7 @@ npm install
 npm run dev
 ```
 
-Opens at [localhost:5173](http://localhost:5173). All `/api/*` requests are proxied to `http://localhost:3000` by the Vite dev server.
+Opens at [localhost:5173](http://localhost:5173). All `/api/*` requests are proxied to `http://localhost:3000`.
 
 ---
 
@@ -243,26 +369,19 @@ Opens at [localhost:5173](http://localhost:5173). All `/api/*` requests are prox
 
 | Variable | File | Description |
 |---|---|---|
-| `VITE_API_URL` | `.env.production` | Full API base URL (no trailing slash). Omit `/api` — it is appended per-request. |
+| `VITE_API_URL` | `.env.production` | Full API base URL. Only needed for production builds. |
 
-The variable is only needed for production. In development the Vite proxy (`vite.config.ts`) handles routing.
-
-**`.env.production`** (already present in this repo):
+**`.env.production`:**
 ```env
 VITE_API_URL=https://api.floodmas.lsattachiris.com/api
 ```
 
-Rename `.env.production` or create `.env.local` to point to a different API server.
+### Map Keys (in `src/config/layers.ts`)
 
-### MapTiler Key
-
-The MapTiler API key is set in `src/config/layers.ts`:
-
-```ts
-export const MAPTILER_KEY = '...';
-```
-
-The current key is valid for `floodmas.lsattachiris.com`. For a fork, replace it with a key from [maptiler.com](https://www.maptiler.com/) (free tier available).
+| Key | Service | Notes |
+|---|---|---|
+| `MAPTILER_KEY` | MapTiler | Hybrid satellite basemap. Free tier available at maptiler.com |
+| `OS_API_KEY` | Ordnance Survey | 3 ZXY tile basemaps + Names API. Free tier at osdatahub.os.uk |
 
 ---
 
@@ -280,10 +399,6 @@ The current key is valid for `floodmas.lsattachiris.com`. For a fork, replace it
 
 ### Firebase Hosting
 
-The project is configured for deployment to Firebase Hosting. The site is deployed from the `dist/` build output.
-
-From the monorepo root:
-
 ```bash
 cd client && npm run build
 cd .. && npx firebase deploy --only hosting
@@ -291,24 +406,23 @@ cd .. && npx firebase deploy --only hosting
 
 Or use the `deploy.sh` / `deploy.bat` scripts in the repository root.
 
-The Firebase configuration (`firebase.json` in the monorepo root) sets:
+Firebase configuration (`firebase.json` in monorepo root):
 - Public directory: `client/dist`
 - SPA rewrite: all routes → `index.html`
-- Security headers (X-Frame-Options, X-Content-Type-Options, etc.)
-- Cache-Control: immutable for hashed JS/CSS assets, no-cache for `index.html`
+- Security headers (X-Frame-Options, X-Content-Type-Options)
+- Cache-Control: immutable for hashed assets, no-cache for `index.html`
 
-### Deploying to Other Hosts
+### Other Hosts
 
-The build is a standard static SPA. Deploy `dist/` to any static host (Netlify, Vercel, Cloudflare Pages, etc.) and configure:
-
-1. Set `VITE_API_URL` as a build environment variable pointing to your API server
-2. Configure a catch-all redirect: all routes → `index.html`
+Standard static SPA. Deploy `dist/` to any host and configure:
+1. Set `VITE_API_URL` as a build environment variable
+2. Add a catch-all redirect: all routes → `index.html`
 
 ---
 
 ## Design System
 
-The UI uses a dark glassmorphism design language defined via custom Tailwind tokens in `tailwind.config.js` and CSS utility classes in `src/index.css`.
+Dark glassmorphism design via custom Tailwind tokens (`tailwind.config.js`) and CSS utilities (`src/index.css`).
 
 ### Colour Tokens
 
@@ -320,18 +434,16 @@ The UI uses a dark glassmorphism design language defined via custom Tailwind tok
 | `flood-text` | `#f1f5f9` | Primary text |
 | `flood-textMuted` | `#94a3b8` | Secondary text |
 
-### Severity Palette (consistent across all layers)
+### Severity Palette
 
 | Level | Colour | Meaning |
 |---|---|---|
 | 1 — Severe | `#ef4444` (red-500) | Life-threatening conditions |
 | 2 — Warning | `#f97316` (orange-500) | Flooding expected |
 | 3 — Alert | `#eab308` (yellow-500) | Flooding possible |
-| 4 — Expired | `#94a3b8` (slate-400) | Warning no longer in force |
+| 4 — Expired | `#94a3b8` (slate-400) | No longer in force |
 
 ### Glass Panels
-
-Panels use `.glass` — a backdrop-blur frosted surface:
 
 ```css
 .glass {
@@ -341,9 +453,7 @@ Panels use `.glass` — a backdrop-blur frosted surface:
 }
 ```
 
-### NLP Keyword Highlight Classes
-
-The `SocialFeed` component uses five semantic highlight classes:
+### NLP Highlight Classes
 
 | Class | Colour | Category |
 |---|---|---|
@@ -355,24 +465,26 @@ The `SocialFeed` component uses five semantic highlight classes:
 
 ---
 
-## Data Sources
+## Key Dependencies
 
-All data displayed by the client is sourced through the FloodMAS API, which proxies and caches:
-
-| Source | Data |
-|---|---|
-| [Environment Agency Flood Monitoring API](https://environment.data.gov.uk/flood-monitoring/doc/reference) | Flood warnings, river gauges, rainfall gauges, latest readings |
-| [Open-Meteo](https://open-meteo.com/) | Precipitation grid, river discharge forecast |
-| [Defra ArcGIS Portal](https://environment.data.gov.uk/arcgis/) | Flood defences, historic flood outlines, WMS risk rasters |
-| [Bluesky AT Protocol](https://atproto.com/) | Social flood posts (via `@atproto/api`) |
-
-All external APIs are free and require no authentication.
+| Package | Version | Purpose |
+|---|---|---|
+| `react` / `react-dom` | 19.x | UI framework |
+| `maplibre-gl` | 4.7.x | WebGL map engine |
+| `@tanstack/react-query` | 5.x | Server state, caching, polling |
+| `zustand` | 5.x | Client state (layers, agent chat) |
+| `react-markdown` | 10.x | Agent chat message rendering |
+| `remark-gfm` | 4.x | GFM tables/strikethrough in Markdown |
+| `sonner` | 1.7.x | Toast notifications |
+| `tailwindcss` | 3.4.x | Utility-first CSS |
+| `vite` | 6.x | Build tool + dev server |
+| `typescript` | 5.6.x | Type safety |
 
 ---
 
 ## Browser Support
 
-Requires a modern browser with WebGL 2 support for MapLibre GL:
+Requires WebGL 2 for MapLibre GL:
 
 - Chrome 80+
 - Firefox 71+
@@ -381,4 +493,4 @@ Requires a modern browser with WebGL 2 support for MapLibre GL:
 
 ---
 
-*Part of the FloodMAS project — a multi-agent flood intelligence system built for the UK.*
+*Part of the [FloodMAS](https://floodmas.lsattachiris.com) monorepo — a multi-agent flood intelligence system for the UK.*
