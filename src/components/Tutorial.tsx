@@ -144,6 +144,10 @@ function createDriver(snapshot: PanelSnapshot): Driver {
     if (!isLast(i)) {
       handlers.onNextClick = () => {
         prepareStep(i + 1);
+        // Mark tutorial completed as soon as the user reaches the last step
+        if (isLast(i + 1)) {
+          localStorage.setItem(STORAGE_KEY, 'true');
+        }
         requestAnimationFrame(() => {
           requestAnimationFrame(() => driverInstance?.moveNext());
         });

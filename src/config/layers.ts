@@ -2,6 +2,15 @@ export const MAPTILER_KEY = 's8HO9kcqXZc8OE1NrxTF';
 
 export const MAP_STYLE = `https://api.maptiler.com/maps/hybrid/style.json?key=${MAPTILER_KEY}`;
 
+/**
+ * Base URL for API-proxied tile endpoints.
+ * In dev: relative `/api` (Vite proxy handles it).
+ * In production: absolute URL to the API server (same origin as VITE_API_URL).
+ */
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+// VITE_API_URL already ends with `/api` — strip it for tile URLs that start with `/api/`
+const TILE_BASE = API_BASE.replace(/\/api$/, '');
+
 export const MAP_INITIAL_VIEW = {
   center: [-2.5, 54.5] as [number, number],
   zoom: 5.8,
@@ -12,15 +21,15 @@ export const MAP_INITIAL_VIEW = {
 /** OS Maps ZXY tile URLs — proxied through Express to avoid CORS */
 export const OS_TILE_LAYERS = {
   road: {
-    url: '/api/tiles/os/Road_3857/{z}/{x}/{y}.png',
+    url: `${TILE_BASE}/api/tiles/os/Road_3857/{z}/{x}/{y}.png`,
     label: 'OS Road Map',
   },
   outdoor: {
-    url: '/api/tiles/os/Outdoor_3857/{z}/{x}/{y}.png',
+    url: `${TILE_BASE}/api/tiles/os/Outdoor_3857/{z}/{x}/{y}.png`,
     label: 'OS Outdoor Map',
   },
   light: {
-    url: '/api/tiles/os/Light_3857/{z}/{x}/{y}.png',
+    url: `${TILE_BASE}/api/tiles/os/Light_3857/{z}/{x}/{y}.png`,
     label: 'OS Light Map',
   },
 } as const;
@@ -28,27 +37,27 @@ export const OS_TILE_LAYERS = {
 /** ArcGIS tile layer URLs — proxied through Express to avoid CORS */
 export const WMS_LAYERS = {
   riskRiversSea: {
-    url: '/api/tiles/ea/RiskOfFloodingFromRiversAndSea/{z}/{x}/{y}',
+    url: `${TILE_BASE}/api/tiles/ea/RiskOfFloodingFromRiversAndSea/{z}/{x}/{y}`,
     label: 'Flood Risk — Rivers & Sea',
   },
   riskSurfaceWater: {
-    url: '/api/tiles/ea/RiskOfFloodingFromSurfaceWater/{z}/{x}/{y}',
+    url: `${TILE_BASE}/api/tiles/ea/RiskOfFloodingFromSurfaceWater/{z}/{x}/{y}`,
     label: 'Flood Risk — Surface Water',
   },
   floodZone2: {
-    url: '/api/tiles/ea/FloodMapForPlanningRiversAndSeaFloodZone2/{z}/{x}/{y}',
+    url: `${TILE_BASE}/api/tiles/ea/FloodMapForPlanningRiversAndSeaFloodZone2/{z}/{x}/{y}`,
     label: 'Flood Zone 2 (Medium Risk)',
   },
   floodZone3: {
-    url: '/api/tiles/ea/FloodMapForPlanningRiversAndSeaFloodZone3/{z}/{x}/{y}',
+    url: `${TILE_BASE}/api/tiles/ea/FloodMapForPlanningRiversAndSeaFloodZone3/{z}/{x}/{y}`,
     label: 'Flood Zone 3 (High Risk)',
   },
   reservoirDryDay: {
-    url: '/api/tiles/ea/ReservoirFloodExtentsDryDay/{z}/{x}/{y}',
+    url: `${TILE_BASE}/api/tiles/ea/ReservoirFloodExtentsDryDay/{z}/{x}/{y}`,
     label: 'Reservoir Flood Extents (Dry Day)',
   },
   reservoirWetDay: {
-    url: '/api/tiles/ea/ReservoirFloodExtentsWetDay/{z}/{x}/{y}',
+    url: `${TILE_BASE}/api/tiles/ea/ReservoirFloodExtentsWetDay/{z}/{x}/{y}`,
     label: 'Reservoir Flood Extents (Wet Day)',
   },
 } as const;

@@ -3,6 +3,7 @@ import { useHealth } from '../hooks/useFloodData';
 import { useLayerStore } from '../stores/layerStore';
 import { useAgentChatStore } from '../stores/agentChatStore';
 import { Tip } from './Tip';
+import { FeatureHint } from './FeatureHint';
 import { startTutorial } from './Tutorial';
 import { resetPanelLayout } from './DraggablePanel';
 
@@ -65,16 +66,18 @@ export default function Header() {
     <header className="header-bar shrink-0 z-50 pointer-events-auto">
       {/* Left: menu + brand */}
       <div className="flex items-center gap-2">
-        <Tip text="Toggle map layers panel" side="bottom">
-          <button
-            onClick={toggleLeft}
-            className={`header-icon-btn ${leftOpen ? 'header-icon-btn-active' : ''}`}
-          >
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 6h16M4 12h16M4 18h10" />
-            </svg>
-          </button>
-        </Tip>
+        <FeatureHint id="layers">
+          <Tip text="Toggle map layers panel" side="bottom">
+            <button
+              onClick={toggleLeft}
+              className={`header-icon-btn ${leftOpen ? 'header-icon-btn-active' : ''}`}
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 6h16M4 12h16M4 18h10" />
+              </svg>
+            </button>
+          </Tip>
+        </FeatureHint>
 
         <div className="flex items-center gap-2 select-none">
           <FloodMASLogo />
@@ -91,14 +94,16 @@ export default function Header() {
 
       {/* Right cluster: statuses + clock + feed toggle */}
       <div className="flex items-center gap-1.5">
-        <Tip text="Replay the guided platform tour" side="bottom">
-          <button onClick={startTutorial} className="header-icon-btn">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 16v-4M12 8h.01" />
-            </svg>
-          </button>
-        </Tip>
+        <FeatureHint id="tutorial">
+          <Tip text="Replay the guided platform tour" side="bottom">
+            <button onClick={startTutorial} className="header-icon-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4M12 8h.01" />
+              </svg>
+            </button>
+          </Tip>
+        </FeatureHint>
 
         <SettingsDropdown />
 
@@ -110,32 +115,36 @@ export default function Header() {
           <LiveClock />
         </div>
 
-        <Tip text="AI multi-agent orchestration — chat, proactive monitoring & report generation" side="bottom">
-          <button
-            onClick={toggleChat}
-            className={`header-icon-btn ${chatOpen ? 'header-icon-btn-active' : ''}`}
-          >
-            <span className="relative">
+        <FeatureHint id="agents">
+          <Tip text="AI multi-agent orchestration — chat, proactive monitoring & report generation" side="bottom">
+            <button
+              onClick={toggleChat}
+              className={`header-icon-btn ${chatOpen ? 'header-icon-btn-active' : ''}`}
+            >
+              <span className="relative">
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714a2.25 2.25 0 0 0 .659 1.591L19 14.5m-4.75-11.396c.251.023.501.05.75.082M19 14.5l-2.47 2.47a2.25 2.25 0 0 1-1.591.659H9.061a2.25 2.25 0 0 1-1.591-.659L5 14.5m14 0h-1.25m-11.5 0H5m1.757-5.686a8.959 8.959 0 0 1 10.486 0" />
               </svg>
-              {chatStreaming && (
-                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
-              )}
-            </span>
-          </button>
-        </Tip>
+                {chatStreaming && (
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
+                )}
+              </span>
+            </button>
+          </Tip>
+        </FeatureHint>
 
-        <Tip text="Toggle real-time flood news feed — EA warnings & social posts" side="bottom">
+        <FeatureHint id="feed">
+          <Tip text="Toggle real-time flood news feed — EA warnings & social posts" side="bottom">
           <button
             onClick={toggleRight}
             className={`header-icon-btn ${rightOpen ? 'header-icon-btn-active' : ''}`}
           >
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-          </button>
-        </Tip>
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </button>
+          </Tip>
+        </FeatureHint>
       </div>
     </header>
   );

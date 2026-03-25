@@ -10,7 +10,7 @@
 [![MapLibre GL](https://img.shields.io/badge/MapLibre_GL-4.7-396CB2?style=flat-square)](https://maplibre.org/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](../LICENSE)
 
-React SPA for [FloodMAS](https://floodmas.lsattachiris.com) — 28 toggleable map layers, AI agent chat, historical timeline, and real-time flood feeds.  
+React SPA for [FloodMAS](https://floodmas.lsattachiris.com) — 29 toggleable map layers, AI agent chat, historical timeline, and real-time flood feeds.  
 Visualises live Environment Agency data, weather forecasts, risk models, local datasets, AI agent analysis, and social media signals on an interactive satellite map, with postcode-level risk search, LLFA strategy cards, and a cinematic historical timeline spanning 1947–2024.  
 **Live:** [floodmas.lsattachiris.com](https://floodmas.lsattachiris.com) · **API:** [api.floodmas.lsattachiris.com](https://api.floodmas.lsattachiris.com)
 
@@ -23,7 +23,7 @@ Visualises live Environment Agency data, weather forecasts, risk models, local d
 - [Overview](#overview)
 - [Tech Stack](#tech-stack)
 - [Features](#features)
-- [Map Layers (28)](#map-layers-28)
+- [Map Layers (29)](#map-layers-29)
 - [Data Sources & Datasets](#data-sources--datasets)
 - [Project Structure](#project-structure)
 - [Architecture](#architecture)
@@ -62,14 +62,16 @@ The application is entirely read-only and stateless — no authentication is req
 
 ## Features
 
-### Interactive Map (28 Layers)
-Full-screen satellite map with 28 independently toggleable layers across 4 groups (Live, Weather, Risk, Reference). Each layer has click popups with contextual information, data-driven styling, and automatic polling.
+### Interactive Map (29 Layers)
+Full-screen satellite map with 29 independently toggleable layers across 4 groups (Live, Weather, Risk, Reference). Each layer has click popups with contextual information, data-driven styling, and automatic polling.
 
 ### AI Agent Chat
 A sliding panel providing access to a multi-agent system (Supervisor + 4 specialist workers):
 - **Chat** — Natural-language flood queries with SSE-streamed responses, rendered as Markdown
 - **Proactive Scan** — One-click flood risk assessment across the entire UK
 - **Report Generation** — Professional flood reports from conversation context
+- **Intel Tab** — Reference panel listing all 28 agent tools with descriptions, grouped by specialist role
+- **Agent Graph** — Visual A2A agent network diagram showing coordinator → specialist relationships
 - Agent status indicators show which specialist (Monitoring, Forecasting, Risk Analysis, Emergency Response) is active
 
 ### Place Search + Postcode Risk
@@ -102,14 +104,21 @@ Cinematic animated timeline:
 - Outro summary: aggregate stats (floods, lives lost, properties, economic damage)
 - Scrubber track with year markers and click-to-seek
 
+### Draggable Panels
+All floating UI panels (Layer Control, Flood Feed, Agent Chat) are draggable, resizable, and their positions, sizes, and open/closed state persist to `localStorage` across sessions. A settings gear in the Header provides a **Reset Panel Positions** option.
+
+### Basemap Selector
+Four basemap styles (Satellite/Hybrid, OS Light, OS Road, OS Outdoor) are switchable from within the Layer Control panel, below the Reference layer group.
+
 ### Header
 - Live UK clock (ticks every second)
 - Data source status: EA API, Bluesky, Met Office — green/amber indicators
 - Panel toggle buttons (Layer Control left, Social Feed right)
+- Settings gear → Reset Panel Positions
 
 ---
 
-## Map Layers (28)
+## Map Layers (29)
 
 All layers defined in `src/config/layers.ts`. Grouped by visual hierarchy (reference at bottom, live on top).
 
@@ -135,32 +144,35 @@ All layers defined in `src/config/layers.ts`. Grouped by visual hierarchy (refer
 | 11 | `met-office-forecast` | Met Office Forecast | Met Office DataHub | `#f59e0b` | OFF |
 | 12 | `cds-reanalysis` | ERA5-Land Reanalysis | Copernicus CDS | `#7c3aed` | OFF |
 
-### Risk — Modelled & Statutory (9 layers)
+### Risk — Modelled & Statutory (10 layers)
+
+Layers 13–18 fetch GeoJSON polygons via `/api/features/risk/:layer`, which queries ArcGIS FeatureServer endpoints. Fetching is **zoom-gated** (≥ zoom 7); the Layer Control shows a **"zoom in"** badge when a risk layer is active but zoom is insufficient.
 
 | # | ID | Label | Source | Colour | Default |
-|---|---|-------|--------|--------|---------|
-| 13 | `risk-rivers-sea` | Risk — Rivers & Sea | EA WMS Tiles | `#7c3aed` | OFF |
-| 14 | `risk-surface-water` | Risk — Surface Water | EA WMS Tiles | `#06b6d4` | OFF |
-| 15 | `flood-zone-2` | Flood Zone 2 (Medium) | EA WMS Tiles | `#818cf8` | OFF |
-| 16 | `flood-zone-3` | Flood Zone 3 (High) | EA WMS Tiles | `#c084fc` | OFF |
-| 17 | `reservoir-dry` | Reservoir Extents (Dry) | EA WMS Tiles | `#f472b6` | OFF |
-| 18 | `reservoir-wet` | Reservoir Extents (Wet) | EA WMS Tiles | `#fb7185` | OFF |
+|---|---|-------|--------|--------|---------||
+| 13 | `risk-rivers-sea` | Risk — Rivers & Sea | ArcGIS FeatureServer (GeoJSON) | `#7c3aed` | OFF |
+| 14 | `risk-surface-water` | Risk — Surface Water | ArcGIS FeatureServer (GeoJSON) | `#06b6d4` | OFF |
+| 15 | `flood-zone-2` | Flood Zone 2 (Medium) | ArcGIS FeatureServer (GeoJSON) | `#818cf8` | OFF |
+| 16 | `flood-zone-3` | Flood Zone 3 (High) | ArcGIS FeatureServer (GeoJSON) | `#c084fc` | OFF |
+| 17 | `reservoir-dry` | Reservoir Extents (Dry) | ArcGIS FeatureServer (GeoJSON) | `#f472b6` | OFF |
+| 18 | `reservoir-wet` | Reservoir Extents (Wet) | ArcGIS FeatureServer (GeoJSON) | `#fb7185` | OFF |
 | 19 | `flood-warning-areas` | Flood Warning Areas | EA Flood Monitoring API | `#fbbf24` | OFF |
 | 20 | `flood-risk-areas` | Flood Risk Areas (Defra) | Local Dataset (BNG→WGS84) | `#e879f9` | OFF |
 | 21 | `llfa-boundaries` | LLFA Boundaries | Local Dataset (GeoJSON+XLSX) | `#10b981` | OFF |
+| 22 | `imd-deprivation` | IMD Deprivation (2019) | IMD 2019 CSV + ONS FeatureServer | `#f43f5e` | OFF |
 
-### Reference — Static / Historical (7 layers)
+### Reference — Static / Historical (6 layers)
 
 | # | ID | Label | Source | Colour | Default |
-|---|---|-------|--------|--------|---------|
-| 22 | `flood-defences` | Flood Defences | Defra ArcGIS FeatureServer | `#22c55e` | OFF |
-| 23 | `historic-floods` | Historic Flood Outlines | Defra ArcGIS FeatureServer | `#f97316` | OFF |
-| 24 | `main-rivers` | Main Rivers | Defra ArcGIS FeatureServer | `#2563eb` | OFF |
-| 25 | `os-map-light` | OS Light Map | Ordnance Survey ZXY Tiles | `#94a3b8` | OFF |
-| 26 | `os-map-road` | OS Road Map | Ordnance Survey ZXY Tiles | `#64748b` | OFF |
-| 27 | `os-map-outdoor` | OS Outdoor Map | Ordnance Survey ZXY Tiles | `#059669` | OFF |
+|---|---|-------|--------|--------|---------||
+| 23 | `flood-defences` | Flood Defences | Defra ArcGIS FeatureServer | `#22c55e` | OFF |
+| 24 | `historic-floods` | Historic Flood Outlines | Defra ArcGIS FeatureServer | `#f97316` | OFF |
+| 25 | `main-rivers` | Main Rivers | Defra ArcGIS FeatureServer | `#2563eb` | OFF |
+| 26 | `os-map-light` | OS Light Map | Ordnance Survey ZXY Tiles | `#94a3b8` | OFF |
+| 27 | `os-map-road` | OS Road Map | Ordnance Survey ZXY Tiles | `#64748b` | OFF |
+| 28 | `os-map-outdoor` | OS Outdoor Map | Ordnance Survey ZXY Tiles | `#059669` | OFF |
 
-Layer 28 (timeline dots) is rendered dynamically during timeline playback.
+Layer 29 (timeline dots) is rendered dynamically during timeline playback.
 
 ---
 
@@ -176,7 +188,7 @@ All data is fetched from the FloodMAS API server, which proxies, caches, and ser
 | 2 | **Open-Meteo Forecast** | None | Precipitation grid, soil moisture, snow depth, wind gusts, pressure |
 | 3 | **Open-Meteo Flood** | None | 72h river discharge forecast |
 | 4 | **Defra ArcGIS Online** | None | Flood defences, historic flood outlines, main rivers (FeatureServer) |
-| 5 | **EA WMS Tile Services** | None | 6 risk raster layers (rivers/sea, surface water, zones 2/3, reservoir dry/wet) — consumed directly as XYZ tiles |
+| 5 | **EA ArcGIS FeatureServer** | None | 6 risk polygon layers (rivers/sea, surface water, zones 2/3, reservoir dry/wet) — fetched as GeoJSON via `/api/features/risk/:layer`, zoom-gated (≥ 7) |
 | 6 | **Bluesky AT Protocol** | None | Public social flood posts |
 | 7 | **UKCEH NRFA** | None | National River Flow Archive gauging stations (~1,500+) |
 | 8 | **Met Office DataHub** | API key | Official hourly site-specific forecast (temperature, wind, rain probability, UV) |
@@ -214,17 +226,25 @@ client/
     ├── App.tsx                  # Layout: map + floating UI
     ├── index.css                # Tailwind directives + design tokens
     ├── components/
-    │   ├── FloodMap.tsx         # MapLibre GL map + 28 layer sources/renderers
-    │   ├── Header.tsx           # Top bar: brand, status indicators, clock, toggles
-    │   ├── LayerControl.tsx     # Left panel: 28 layer toggles with counts & groups
-    │   ├── MapLegend.tsx        # Floating bottom-left legend (all active layers)
-    │   ├── SocialFeed.tsx       # Right panel: EA warnings + Bluesky feed
+    │   ├── FloodMap.tsx         # MapLibre GL map + 29 layer sources/renderers
+    │   ├── Header.tsx           # Top bar: brand, status indicators, clock, panel toggles, settings
+    │   ├── LayerControl.tsx     # Left panel: 29 layer toggles, counts, zoom hints, collapsible legend
+    │   ├── MapLegend.tsx        # Legend swatches (embedded in LayerControl as collapsible section)
+    │   ├── SocialFeed.tsx       # Right panel: EA warnings + Bluesky feed with NLP highlighting
     │   ├── Timeline.tsx         # Historical timeline overlay (1947–2024)
-    │   ├── AgentChat.tsx        # AI agent panel: chat, proactive scan, report gen
+    │   ├── AgentChat.tsx        # AI agent panel: chat, proactive scan, report gen, intel, graph tabs
+    │   ├── AgentGraph.tsx       # A2A agent network diagram (coordinator → specialists)
+    │   ├── IntelTab.tsx         # Agent tool reference panel (28 tools, grouped by specialist)
+    │   ├── DraggablePanel.tsx   # Draggable/resizable panel with localStorage position persistence
+    │   ├── BaseMapSelector.tsx  # Basemap style switcher (4 options, local SVG previews)
     │   ├── PlaceSearch.tsx      # OS place search + postcode risk lookup
-    │   └── Tip.tsx              # Portal tooltip component
+    │   ├── Tutorial.tsx         # Interactive onboarding tutorial overlay
+    │   ├── Tip.tsx              # Portal tooltip component
+    │   └── landing/             # Landing page section components
     ├── config/
-    │   └── layers.ts            # 28 LayerConfigs, WMS URLs, OS tile URLs, MapTiler key
+    │   ├── layers.ts            # 29 LayerConfigs, FeatureServer URLs, OS tile URLs, MapTiler key
+    │   ├── intel.ts             # Agent tool knowledge base (28 tool descriptions + specialist roles)
+    │   └── tutorial.ts          # Tutorial step definitions
     ├── context/
     │   └── MapContext.tsx        # maplibregl.Map ref shared via React context
     ├── data/
@@ -267,8 +287,8 @@ client/
 | Store | Technology | Contents |
 |---|---|---|
 | Server state | TanStack Query | API data, loading/error states, per-hook cache TTLs |
-| Layer state | Zustand (`layerStore`) | `visibleLayers: Set<string>`, left/right panel open |
-| Agent state | Zustand (`agentChatStore`) | Messages, SSE events, agent statuses, streaming/proactive/report flags |
+| Layer state | Zustand (`layerStore`) | `visibleLayers: Set<string>`, `mapZoom: number`, panel open/close + localStorage persistence |
+| Agent state | Zustand (`agentChatStore`) | Messages, SSE events, agent statuses, streaming/proactive/report flags + localStorage persistence |
 | Map ref | React Context | `maplibregl.Map` instance shared across all components |
 
 ### Data Fetching — All 24 Hooks
@@ -300,6 +320,8 @@ client/
 | `usePostcodeRisk` | `GET /api/datasets/postcode-risk` | ∞ (static) | Single postcode lookup |
 | `usePropertyRiskSummary` | `GET /api/datasets/properties-risk-summary` | ∞ (static) | National property stats |
 | `useLLFABoundaries` | `GET /api/llfa` | ∞ (static) | 218 LLFA boundary polygons |
+| `useRiskLayerFeatures` | `GET /api/features/risk/:layer` | 5 min | GeoJSON polygons for 6 risk layer types; **zoom-gated** (enabled only when zoom ≥ 7 and bbox available) |
+| `useIMDBoundaries` | `GET /api/imd` | 5 min | LSOA IMD polygons for map view; **zoom-gated** (enabled only when zoom ≥ 9 and bbox available) |
 
 ### Map Layer Rendering Order
 
@@ -312,10 +334,11 @@ MapLibre GL layers follow a strict z-order (bottom to top):
   Main Rivers (blue polylines)
   Flood Defences (green lines)
 ── Risk ──
-  WMS risk rasters (6 EA tile layers)
+  ArcGIS FeatureServer GeoJSON polygons (6 risk layers: rivers/sea, surface water, zones 2/3, reservoir dry/wet)
   Flood Warning Areas (amber outlines)
   Flood Risk Areas (purple fill)
   LLFA Boundaries (green/grey data-driven fill)
+  IMD Deprivation (LSOA decile choropleth, zoom ≥ 9)
 ── Weather ──
   Soil Moisture, Extended Weather, CDS, Met Office (circles)
   River Discharge (teal circles)
