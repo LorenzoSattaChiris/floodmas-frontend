@@ -10,7 +10,7 @@
 [![MapLibre GL](https://img.shields.io/badge/MapLibre_GL-4.7-396CB2?style=flat-square)](https://maplibre.org/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](../LICENSE)
 
-React SPA for [FloodMAS](https://floodmas.lsattachiris.com) — 29 toggleable map layers, AI agent chat, historical timeline, and real-time flood feeds.  
+React SPA for [FloodMAS](https://floodmas.lsattachiris.com) — 38 toggleable map layers, AI agent chat, historical timeline, and real-time flood feeds.  
 Visualises live Environment Agency data, weather forecasts, risk models, local datasets, AI agent analysis, and social media signals on an interactive satellite map, with postcode-level risk search, LLFA strategy cards, and a cinematic historical timeline spanning 1947–2024.  
 **Live:** [floodmas.lsattachiris.com](https://floodmas.lsattachiris.com) · **API:** [api.floodmas.lsattachiris.com](https://api.floodmas.lsattachiris.com)
 
@@ -23,7 +23,7 @@ Visualises live Environment Agency data, weather forecasts, risk models, local d
 - [Overview](#overview)
 - [Tech Stack](#tech-stack)
 - [Features](#features)
-- [Map Layers (29)](#map-layers-29)
+- [Map Layers (38)](#map-layers-38)
 - [Data Sources & Datasets](#data-sources--datasets)
 - [Project Structure](#project-structure)
 - [Architecture](#architecture)
@@ -118,7 +118,7 @@ Four basemap styles (Satellite/Hybrid, OS Light, OS Road, OS Outdoor) are switch
 
 ---
 
-## Map Layers (29)
+## Map Layers (38)
 
 All layers defined in `src/config/layers.ts`. Grouped by visual hierarchy (reference at bottom, live on top).
 
@@ -161,18 +161,27 @@ Layers 13–18 fetch GeoJSON polygons via `/api/features/risk/:layer`, which que
 | 21 | `llfa-boundaries` | LLFA Boundaries | Local Dataset (GeoJSON+XLSX) | `#10b981` | OFF |
 | 22 | `imd-deprivation` | IMD Deprivation (2019) | IMD 2019 CSV + ONS FeatureServer | `#f43f5e` | OFF |
 
-### Reference — Static / Historical (6 layers)
+### Reference — Static / Historical (15 layers)
 
 | # | ID | Label | Source | Colour | Default |
-|---|---|-------|--------|--------|---------||
-| 23 | `flood-defences` | Flood Defences | Defra ArcGIS FeatureServer | `#22c55e` | OFF |
-| 24 | `historic-floods` | Historic Flood Outlines | Defra ArcGIS FeatureServer | `#f97316` | OFF |
-| 25 | `main-rivers` | Main Rivers | Defra ArcGIS FeatureServer | `#2563eb` | OFF |
-| 26 | `os-map-light` | OS Light Map | Ordnance Survey ZXY Tiles | `#94a3b8` | OFF |
-| 27 | `os-map-road` | OS Road Map | Ordnance Survey ZXY Tiles | `#64748b` | OFF |
-| 28 | `os-map-outdoor` | OS Outdoor Map | Ordnance Survey ZXY Tiles | `#059669` | OFF |
+|---|---|-------|--------|--------|---------|
+| 23 | `wfd-catchments` | WFD River Catchments | Local Dataset (BNG→WGS84) | `#0891b2` | OFF |
+| 24 | `nfm-hotspots` | NFM Hotspots | Local Dataset (GeoJSON) | `#16a34a` | OFF |
+| 25 | `schools` | Schools (State-Funded) | Local Dataset (CSV + geocoded) | `#f97316` | OFF |
+| 26 | `hospitals` | Health & Care (CQC) | Local Dataset (CSV + geocoded) | `#ef4444` | OFF |
+| 27 | `bathing-waters` | Bathing Water Quality | Local Dataset (EA classifications) | `#06b6d4` | OFF |
+| 28 | `ramsar-wetlands` | Ramsar Wetlands (England) | Local Dataset (GeoJSON) | `#059669` | OFF |
+| 29 | `water-company-boundaries` | Water Company Boundaries | Local Dataset (GeoJSON) | `#7c3aed` | OFF |
+| 30 | `edm-overflows` | Storm Overflows (EDM 2024) | Local Dataset (GeoJSON) | `#b91c1c` | OFF |
+| 31 | `winep-overflows` | WINEP Overflows (Under Investigation) | Local Dataset (GeoJSON) | `#f59e0b` | OFF |
+| 32 | `flood-defences` | Flood Defences | Defra ArcGIS FeatureServer | `#22c55e` | OFF |
+| 33 | `historic-floods` | Historic Flood Outlines | Defra ArcGIS FeatureServer | `#f97316` | OFF |
+| 34 | `main-rivers` | Main Rivers | Defra ArcGIS FeatureServer | `#2563eb` | OFF |
+| 35 | `os-map-light` | OS Light Map | Ordnance Survey ZXY Tiles | `#94a3b8` | OFF |
+| 36 | `os-map-road` | OS Road Map | Ordnance Survey ZXY Tiles | `#64748b` | OFF |
+| 37 | `os-map-outdoor` | OS Outdoor Map | Ordnance Survey ZXY Tiles | `#059669` | OFF |
 
-Layer 29 (timeline dots) is rendered dynamically during timeline playback.
+Layer 38 (timeline dots) is rendered dynamically during timeline playback.
 
 ---
 
@@ -208,6 +217,15 @@ Sources 1–7 are free public APIs. Sources 8–11 require API keys (configured 
 | **RoFRS Postcodes** | Flood risk per postcode (269K postcodes) | 269K rows | PlaceSearch postcode risk lookup |
 | **RoFRS Properties** | Property-level flood risk aggregation | 2.4M rows | National property risk summary |
 | **LLFA Boundaries** | 218 county/UA boundaries + Russell LFRMS audit | GeoJSON + XLSX | Layer 21: green boundaries + info cards |
+| **WFD River Catchments** | Cycle 2 river water body catchment polygons (BNG→WGS84) | 6,503 polygons | Layer 23: cyan boundary fill |
+| **NFM Hotspots** | Natural flood management opportunity hotspot polygons | 857 polygons | Layer 24: green fill on map |
+| **Schools (State-Funded)** | DfE Edubase state-funded schools, geocoded | 24,402 points | Layer 25: orange circles |
+| **Health & Care (CQC)** | CQC-registered hospitals & care providers, geocoded | 1,259 points | Layer 26: red circles |
+| **Bathing Water Quality** | EA designated bathing waters with rBWD classification | 460 points | Layer 27: colour-coded by classification |
+| **Ramsar Wetlands** | Ramsar Convention wetland sites (England) | 1,291 polygons (73 sites) | Layer 28: emerald fill |
+| **Water Company Boundaries** | Ofwat water company service area polygons | 432 polygons (27 companies) | Layer 29: violet boundary fill |
+| **EDM Storm Overflows 2024** | EA/Rivers Trust storm overflow discharge points | 16,625 points | Layer 30: circles colour-coded by spill count |
+| **WINEP Overflows** | WINEP intermittent discharge sites under investigation | 4,320 points | Layer 31: circles colour-coded by action type |
 
 ---
 
@@ -226,9 +244,9 @@ client/
     ├── App.tsx                  # Layout: map + floating UI
     ├── index.css                # Tailwind directives + design tokens
     ├── components/
-    │   ├── FloodMap.tsx         # MapLibre GL map + 29 layer sources/renderers
+    │   ├── FloodMap.tsx         # MapLibre GL map + 38 layer sources/renderers
     │   ├── Header.tsx           # Top bar: brand, status indicators, clock, panel toggles, settings
-    │   ├── LayerControl.tsx     # Left panel: 29 layer toggles, counts, zoom hints, collapsible legend
+    │   ├── LayerControl.tsx     # Left panel: 38 layer toggles, counts, zoom hints, collapsible legend
     │   ├── MapLegend.tsx        # Legend swatches (embedded in LayerControl as collapsible section)
     │   ├── SocialFeed.tsx       # Right panel: EA warnings + Bluesky feed with NLP highlighting
     │   ├── Timeline.tsx         # Historical timeline overlay (1947–2024)
@@ -242,15 +260,15 @@ client/
     │   ├── Tip.tsx              # Portal tooltip component
     │   └── landing/             # Landing page section components
     ├── config/
-    │   ├── layers.ts            # 29 LayerConfigs, FeatureServer URLs, OS tile URLs, MapTiler key
-    │   ├── intel.ts             # Agent tool knowledge base (28 tool descriptions + specialist roles)
+    │   ├── layers.ts            # 38 LayerConfigs, FeatureServer URLs, OS tile URLs, MapTiler key
+    │   ├── intel.ts             # Agent tool knowledge base (33 tool descriptions + specialist roles)
     │   └── tutorial.ts          # Tutorial step definitions
     ├── context/
     │   └── MapContext.tsx        # maplibregl.Map ref shared via React context
     ├── data/
     │   └── floodHistory.ts      # Curated UK flood events 1947–2024 (timeline data)
     ├── hooks/
-    │   ├── useFloodData.ts      # 24 TanStack Query hooks for all API endpoints
+    │   ├── useFloodData.ts      # 33 TanStack Query hooks for all API endpoints
     │   └── useAgentChat.ts      # SSE streaming hook for agent chat sessions
     ├── services/
     │   └── api.ts               # Typed fetch wrappers + TypeScript interfaces (40+ types)
