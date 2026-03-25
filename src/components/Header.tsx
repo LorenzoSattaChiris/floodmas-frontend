@@ -50,7 +50,7 @@ function LiveClock() {
 }
 
 export default function Header() {
-  const { data: health } = useHealth();
+  const { data: health, isLoading: healthLoading } = useHealth();
   const toggleLeft = useLayerStore((s) => s.toggleLeftPanel);
   const toggleRight = useLayerStore((s) => s.toggleRightPanel);
   const leftOpen = useLayerStore((s) => s.leftPanelOpen);
@@ -108,10 +108,16 @@ export default function Header() {
         <SettingsDropdown />
 
         <div className="header-status-group" data-tour="header-status">
-          <StatusDot label="EA Data" ok={eaStatus === 'ok'} detail="Environment Agency flood warnings & river gauges" />
+          <StatusDot label="EA Data" status={healthLoading ? 'loading' : eaStatus === 'ok' ? 'ok' : 'offline'} detail="Environment Agency flood warnings & river gauges" />
           <div className="w-px h-3 bg-white/[0.06]" />
-          <StatusDot label="Bluesky" ok={bskyStatus === 'ok'} detail="Community flood posts from Bluesky social" />
+          <StatusDot label="Bluesky" status={healthLoading ? 'loading' : bskyStatus === 'ok' ? 'ok' : 'offline'} detail="Community flood posts from Bluesky social" />
           <div className="w-px h-3 bg-white/[0.06]" />
+          {health && !health.datasetsReady && (
+            <>
+              <StatusDot label="Datasets" status="loading" detail="Loading reference datasets (risk areas, schools, hospitals…)" />
+              <div className="w-px h-3 bg-white/[0.06]" />
+            </>
+          )}
           <LiveClock />
         </div>
 
@@ -198,19 +204,34 @@ function SettingsDropdown() {
   );
 }
 
-function StatusDot({ label, ok, detail }: { label: string; ok: boolean; detail?: string }) {
-  const tipText = ok
+function StatusDot({ label, status, detail }: { label: string; status: 'ok' | 'loading' | 'offline'; detail?: string }) {
+  const tipText = status === 'ok'
     ? `${label}: Live${detail ? ` — ${detail}` : ''}`
-    : `${label}: Offline${detail ? ` — ${detail} unavailable` : ''}`;
+    : status === 'loading'
+      ? `${label}: Loading…${detail ? ` — ${detail}` : ''}`
+      : `${label}: Offline${detail ? ` — ${detail} unavailable` : ''}`;
+
+  const dotClass = status === 'ok'
+    ? 'bg-emerald-400'
+    : status === 'loading'
+      ? 'bg-amber-400 animate-pulse'
+      : 'bg-red-400 status-pulse';
+
+  const textClass = status === 'ok'
+    ? 'text-white/40'
+    : status === 'loading'
+      ? 'text-amber-400/70'
+      : 'text-red-400/70';
+
   return (
     <Tip text={tipText} side="bottom">
       <div className="flex items-center gap-1.5 group">
         <span className="relative flex h-1.5 w-1.5">
-          {ok && <span className="absolute inset-0 rounded-full bg-emerald-400/60 animate-ping" />}
-          <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${ok ? 'bg-emerald-400' : 'bg-red-400 status-pulse'}`} />
+          {status === 'ok' && <span className="absolute inset-0 rounded-full bg-emerald-400/60 animate-ping" />}
+          <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${dotClass}`} />
         </span>
-        <span className={`text-[10px] font-medium hidden sm:inline ${ok ? 'text-white/40' : 'text-red-400/70'}`}>
-          {label}
+        <span className={`text-[10px] font-medium hidden sm:inline ${textClass}`}>
+          {status === 'loading' ? `${label}…` : label}
         </span>
       </div>
     </Tip>

@@ -72,6 +72,12 @@ export function useAgentChat() {
         es.close();
         eventSourceRef.current = null;
         setStreaming(false);
+        addMessage({
+          id: crypto.randomUUID(),
+          role: 'agent',
+          content: 'Connection lost — please try again.',
+          timestamp: new Date().toISOString(),
+        });
       };
     } catch (err) {
       setStreaming(false);

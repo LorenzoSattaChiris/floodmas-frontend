@@ -315,6 +315,7 @@ export interface HealthResponse {
     environmentAgency: string;
     bluesky: string;
   };
+  datasetsReady?: boolean;
 }
 
 export function fetchHealth(): Promise<HealthResponse> {
