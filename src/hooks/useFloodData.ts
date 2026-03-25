@@ -26,6 +26,16 @@ import {
   fetchLLFABoundaries,
   fetchIMDBoundaries,
   fetchRiskLayerFeatures,
+  fetchWFDCatchments,
+  fetchNFMHotspots,
+  fetchStormOverflows,
+  fetchSchools,
+  fetchHospitals,
+  fetchBathingWaters,
+  fetchRamsar,
+  fetchWaterCompanyBoundaries,
+  fetchEDMOverflows,
+  fetchWINEPOverflows,
   type FloodsResponse,
   type StationsResponse,
   type ReadingsResponse,
@@ -45,6 +55,16 @@ import {
   type PropertyRiskSummary,
   type LLFAGeoJSON,
   type IMDGeoJSON,
+  type WFDCatchmentsGeoJSON,
+  type NFMHotspotsGeoJSON,
+  type StormOverflowData,
+  type SchoolsGeoJSON,
+  type HospitalsGeoJSON,
+  type BathingWatersGeoJSON,
+  type RamsarGeoJSON,
+  type WaterCompanyBoundariesGeoJSON,
+  type EDMOverflowsGeoJSON,
+  type WINEPOverflowsGeoJSON,
 } from '../services/api';
 
 export function useFloodWarnings() {
@@ -291,5 +311,95 @@ export function useRiskLayerFeatures(layer: string, bbox: string | null, enabled
     enabled: enabled && !!bbox,
     staleTime: 5 * 60_000,
     refetchInterval: false,
+  });
+}
+
+export function useWFDCatchments() {
+  return useQuery<WFDCatchmentsGeoJSON>({
+    queryKey: ['datasets', 'wfd-catchments'],
+    queryFn: fetchWFDCatchments,
+    refetchInterval: false,
+    staleTime: Infinity,
+  });
+}
+
+export function useNFMHotspots() {
+  return useQuery<NFMHotspotsGeoJSON>({
+    queryKey: ['datasets', 'nfm-hotspots'],
+    queryFn: fetchNFMHotspots,
+    refetchInterval: false,
+    staleTime: Infinity,
+  });
+}
+
+export function useStormOverflows() {
+  return useQuery<StormOverflowData>({
+    queryKey: ['datasets', 'storm-overflows'],
+    queryFn: fetchStormOverflows,
+    refetchInterval: false,
+    staleTime: Infinity,
+  });
+}
+
+export function useSchools() {
+  return useQuery<SchoolsGeoJSON>({
+    queryKey: ['datasets', 'schools'],
+    queryFn: fetchSchools,
+    refetchInterval: false,
+    staleTime: Infinity,
+  });
+}
+
+export function useHospitals() {
+  return useQuery<HospitalsGeoJSON>({
+    queryKey: ['datasets', 'hospitals'],
+    queryFn: fetchHospitals,
+    refetchInterval: false,
+    staleTime: Infinity,
+  });
+}
+
+export function useBathingWaters() {
+  return useQuery<BathingWatersGeoJSON>({
+    queryKey: ['datasets', 'bathingWaters'],
+    queryFn: fetchBathingWaters,
+    refetchInterval: false,
+    staleTime: Infinity,
+  });
+}
+
+export function useRamsar() {
+  return useQuery<RamsarGeoJSON>({
+    queryKey: ['datasets', 'ramsar'],
+    queryFn: fetchRamsar,
+    refetchInterval: false,
+    staleTime: Infinity,
+  });
+}
+
+export function useWaterCompanyBoundaries() {
+  return useQuery<WaterCompanyBoundariesGeoJSON>({
+    queryKey: ['datasets', 'waterCompanyBoundaries'],
+    queryFn: fetchWaterCompanyBoundaries,
+    refetchInterval: false,
+    staleTime: Infinity,
+  });
+}
+
+export function useEDMOverflows() {
+  return useQuery<EDMOverflowsGeoJSON>({
+    queryKey: ['datasets', 'edmOverflows'],
+    queryFn: fetchEDMOverflows,
+    refetchInterval: false,
+    staleTime: Infinity,
+  });
+}
+
+export function useWINEPOverflows() {
+  return useQuery<WINEPOverflowsGeoJSON>({
+    queryKey: ['datasets', 'winepOverflows'],
+    queryFn: fetchWINEPOverflows,
+    refetchInterval: false,
+    staleTime: Infinity,
   });
 }

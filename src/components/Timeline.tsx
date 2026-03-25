@@ -8,6 +8,8 @@ import {
 } from '../data/floodHistory';
 import { MAP_INITIAL_VIEW } from '../config/layers';
 import { Tip } from './Tip';
+import { useLayerStore } from '../stores/layerStore';
+import { useAgentChatStore } from '../stores/agentChatStore';
 
 const YEARS = getUniqueYears();
 const YEAR_MIN = YEARS[0];
@@ -58,6 +60,29 @@ export default function Timeline() {
   const phaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const layersAdded = useRef(false);
   const prevOpen = useRef(false);
+  const savedPanelState = useRef<{ left: boolean; right: boolean; agent: boolean } | null>(null);
+
+  // Hide all 3 panels and remember their state
+  const hidePanelsForPlayback = useCallback(() => {
+    const ls = useLayerStore.getState();
+    const as = useAgentChatStore.getState();
+    savedPanelState.current = { left: ls.leftPanelOpen, right: ls.rightPanelOpen, agent: as.panelOpen };
+    if (ls.leftPanelOpen) ls.toggleLeftPanel();
+    if (ls.rightPanelOpen) ls.toggleRightPanel();
+    if (as.panelOpen) as.closePanel();
+  }, []);
+
+  // Restore panels to their pre-playback state
+  const restorePanelsAfterPlayback = useCallback(() => {
+    const saved = savedPanelState.current;
+    if (!saved) return;
+    savedPanelState.current = null;
+    const ls = useLayerStore.getState();
+    const as = useAgentChatStore.getState();
+    if (saved.left && !ls.leftPanelOpen) ls.toggleLeftPanel();
+    if (saved.right && !ls.rightPanelOpen) ls.toggleRightPanel();
+    if (saved.agent && !as.panelOpen) as.openPanel();
+  }, []);
 
   const currentEvent: HistoricFloodEvent | undefined = UK_FLOOD_HISTORY[eventIndex];
   const cumulativeEvents = UK_FLOOD_HISTORY.slice(0, eventIndex + 1);
@@ -256,6 +281,7 @@ export default function Timeline() {
 
   // ─── Intro / Outro phase engine ────────────────────────────────────
   const startIntro = useCallback(() => {
+    hidePanelsForPlayback();
     setPhase('intro');
     setPlaying(false);
     setEventIndex(0);
@@ -279,7 +305,7 @@ export default function Timeline() {
       setPhase('playing');
       setPlaying(true);
     }, INTRO_DURATION);
-  }, [mapRef]);
+  }, [mapRef, hidePanelsForPlayback]);
 
   const startOutro = useCallback(() => {
     setPhase('outro');
@@ -297,8 +323,9 @@ export default function Timeline() {
     }
     phaseTimerRef.current = setTimeout(() => {
       setPhase('idle');
+      restorePanelsAfterPlayback();
     }, OUTRO_DURATION);
-  }, [mapRef]);
+  }, [mapRef, restorePanelsAfterPlayback]);
 
   // ─── Playback engine ──────────────────────────────────────────────
   useEffect(() => {
@@ -332,6 +359,7 @@ export default function Timeline() {
       setEventIndex(0);
       setPhase('idle');
       if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
+      restorePanelsAfterPlayback();
       removeLayers();
       // Reset camera
       const map = mapRef.current;
@@ -346,7 +374,7 @@ export default function Timeline() {
       }
     }
     prevOpen.current = open;
-  }, [open, mapRef, ensureLayers, removeLayers]);
+  }, [open, mapRef, ensureLayers, removeLayers, restorePanelsAfterPlayback]);
 
   // Cleanup on unmount
   useEffect(() => {

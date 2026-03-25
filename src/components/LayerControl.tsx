@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { LAYER_CONFIGS, type LayerConfig } from '../config/layers';
-import { useLayerStore } from '../stores/layerStore';
+import { useLayerStore, type LLFAChoropleth } from '../stores/layerStore';
 import { Tip } from './Tip';
 import BaseMapSelector from './BaseMapSelector';
 import { LEGEND_ITEMS, LegendSwatch } from './MapLegend';
@@ -23,6 +23,15 @@ import {
   useMainRivers,
   useFloodRiskAreas,
   useLLFABoundaries,
+  useWFDCatchments,
+  useNFMHotspots,
+  useSchools,
+  useHospitals,
+  useBathingWaters,
+  useRamsar,
+  useWaterCompanyBoundaries,
+  useEDMOverflows,
+  useWINEPOverflows,
 } from '../hooks/useFloodData';
 
 const GROUP_LABELS: Record<string, string> = {
@@ -61,6 +70,15 @@ export default function LayerControl() {
   const { data: mainRivers } = useMainRivers();
   const { data: floodRiskAreas } = useFloodRiskAreas();
   const { data: llfaBoundaries } = useLLFABoundaries();
+  const { data: wfdCatchments } = useWFDCatchments();
+  const { data: nfmHotspots } = useNFMHotspots();
+  const { data: schools } = useSchools();
+  const { data: hospitals } = useHospitals();
+  const { data: bathingWaters } = useBathingWaters();
+  const { data: ramsarWetlands } = useRamsar();
+  const { data: waterCompanyBoundaries } = useWaterCompanyBoundaries();
+  const { data: edmOverflows } = useEDMOverflows();
+  const { data: winepOverflows } = useWINEPOverflows();
 
   if (!leftPanelOpen) return null;
 
@@ -84,6 +102,15 @@ export default function LayerControl() {
     'flood-risk-areas': floodRiskAreas?.features?.length,
     'llfa-boundaries': llfaBoundaries?.features?.length,
     'imd-deprivation': '1000+',
+    'nfm-hotspots': nfmHotspots?.features?.length,
+    'wfd-catchments': wfdCatchments?.features?.length,
+    'schools': schools?.features?.length,
+    'hospitals': hospitals?.features?.length,
+    'bathing-waters': bathingWaters?.features?.length,
+    'ramsar-wetlands': ramsarWetlands?.features?.length,
+    'water-company-boundaries': waterCompanyBoundaries?.features?.length,
+    'edm-overflows': edmOverflows?.features?.length,
+    'winep-overflows': winepOverflows?.features?.length,
   };
 
   const activeCount = visibleLayers.size;
@@ -135,6 +162,7 @@ export default function LayerControl() {
             {LAYER_CONFIGS
               .filter((l) => l.group === group && !OS_MAP_IDS.has(l.id))
               .map((layer) => (
+              <Fragment key={layer.id}>
               <LayerToggle
                 key={layer.id}
                 layer={layer}
@@ -143,6 +171,10 @@ export default function LayerControl() {
                 needsZoom={layer.group === 'risk' && mapZoom < (layer.id === 'imd-deprivation' ? 9 : 7)}
                 onToggle={() => toggleLayer(layer.id)}
               />
+              {layer.id === 'llfa-boundaries' && visibleLayers.has('llfa-boundaries') && (
+                <LLFAChoroplethSelector />
+              )}
+              </Fragment>
             ))}
             {group === 'reference' && <BaseMapSelector />}
           </div>
@@ -264,6 +296,36 @@ function LegendSection() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+const CHOROPLETH_OPTIONS: { value: LLFAChoropleth; label: string; icon: string }[] = [
+  { value: 'none', label: 'Strategy', icon: '◎' },
+  { value: 'defences', label: 'Defences', icon: '🛡' },
+  { value: 'spend', label: 'Spend', icon: '£' },
+  { value: 'risk', label: 'Risk', icon: '△' },
+  { value: 'protected', label: 'Protected', icon: '🏠' },
+];
+
+function LLFAChoroplethSelector() {
+  const { llfaChoropleth, setLLFAChoropleth } = useLayerStore();
+  return (
+    <div className="px-4 pb-2 pt-0.5 flex items-center gap-1 flex-wrap">
+      <span className="text-[9px] text-flood-textMuted/50 mr-0.5">Color by:</span>
+      {CHOROPLETH_OPTIONS.map((o) => (
+        <button
+          key={o.value}
+          onClick={() => setLLFAChoropleth(o.value)}
+          className={`text-[9px] px-1.5 py-0.5 rounded transition-all ${
+            llfaChoropleth === o.value
+              ? 'bg-emerald-500/20 text-emerald-400 font-medium'
+              : 'text-flood-textMuted/40 hover:text-flood-textMuted/60 hover:bg-white/5'
+          }`}
+        >
+          <span className="mr-0.5">{o.icon}</span>{o.label}
+        </button>
+      ))}
     </div>
   );
 }

@@ -514,6 +514,15 @@ export interface DatasetSummary {
   floodRiskAreas: { features: number };
   postcodeRisk: { postcodes: number };
   propertyRisk: { totalProperties: number };
+  wfdCatchments: { features: number };
+  nfmHotspots: { features: number };
+  schools: { features: number };
+  hospitals: { features: number };
+  bathingWaters: { features: number };
+  ramsar: { features: number };
+  waterCompanyBoundaries: { features: number };
+  edmOverflows: { features: number };
+  winepOverflows: { features: number };
 }
 
 export function fetchDatasetSummary(): Promise<DatasetSummary> {
@@ -614,6 +623,12 @@ export interface LLFAFeatureProperties {
   LAT: number;
   hasStrategy: boolean;
   strategy?: LLFAStrategyInfo;
+  defenceCount: number | null;
+  defenceCondition: number | null;
+  totalSpend: number | null;
+  homesProtected: number | null;
+  propertiesHighRisk: number | null;
+  propertiesHighRiskPct: number | null;
 }
 
 export interface LLFAGeoJSON {
@@ -671,4 +686,269 @@ export interface IMDGeoJSON {
 
 export function fetchIMDBoundaries(bbox: string): Promise<IMDGeoJSON> {
   return fetchJSON(`/imd?bbox=${encodeURIComponent(bbox)}`);
+}
+
+// --- WFD River Waterbody Catchments ---
+
+export interface WFDCatchmentsGeoJSON {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    geometry: { type: string; coordinates: unknown };
+    properties: {
+      wb_id: string;
+      wb_name: string;
+      rbd_id: string;
+      rbd_name: string;
+      wb_cat: string;
+      area_km2: number;
+      length_km: number;
+    };
+  }>;
+}
+
+export function fetchWFDCatchments(): Promise<WFDCatchmentsGeoJSON> {
+  return fetchJSON('/datasets/waterbody-catchments');
+}
+
+// --- NFM Heat Maps / Hotspots ---
+
+export interface NFMHotspotsGeoJSON {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    geometry: { type: string; coordinates: unknown };
+    properties: {
+      layer: string;
+    };
+  }>;
+}
+
+export function fetchNFMHotspots(): Promise<NFMHotspotsGeoJSON> {
+  return fetchJSON('/datasets/nfm-hotspots');
+}
+
+// --- State-Funded Schools ---
+
+export interface SchoolsGeoJSON {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    geometry: { type: 'Point'; coordinates: [number, number] };
+    properties: {
+      urn: string;
+      name: string;
+      type: string;
+      phase: string;
+      la: string;
+      town: string;
+      postcode: string;
+      constituency: string;
+    };
+  }>;
+}
+
+export function fetchSchools(): Promise<SchoolsGeoJSON> {
+  return fetchJSON('/datasets/schools');
+}
+
+// --- CQC Health / Care Locations ---
+
+export interface HospitalsGeoJSON {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    geometry: { type: 'Point'; coordinates: [number, number] };
+    properties: {
+      name: string;
+      aka: string;
+      address: string;
+      postcode: string;
+      phone: string;
+      website: string;
+      serviceTypes: string;
+      specialisms: string;
+      provider: string;
+      la: string;
+      region: string;
+      cqcUrl: string;
+    };
+  }>;
+}
+
+export function fetchHospitals(): Promise<HospitalsGeoJSON> {
+  return fetchJSON('/datasets/hospitals');
+}
+
+// --- EA Bathing Water Quality ---
+
+export interface BathingWatersGeoJSON {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    geometry: { type: 'Point'; coordinates: [number, number] };
+    properties: {
+      eubwid: string;
+      name: string;
+      samplePointId: string;
+      district: string;
+      county: string;
+      country: string;
+      classification: string;
+      classificationYear: number;
+      seasonStart: string;
+      seasonEnd: string;
+      pollutionRiskForecasting: boolean;
+      sewerageUndertaker: string;
+      bwqUrl: string;
+    };
+  }>;
+}
+
+export function fetchBathingWaters(): Promise<BathingWatersGeoJSON> {
+  return fetchJSON('/datasets/bathing-waters');
+}
+
+// --- Ramsar Wetlands (England) ---
+
+export interface RamsarGeoJSON {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates: any };
+    properties: {
+      name: string;
+      code: string;
+      area_ha: number;
+      status: string;
+      gis_date: string;
+    };
+  }>;
+}
+
+export function fetchRamsar(): Promise<RamsarGeoJSON> {
+  return fetchJSON('/datasets/ramsar');
+}
+
+// --- Water Company Boundaries ---
+
+export interface WaterCompanyBoundariesGeoJSON {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates: any };
+    properties: {
+      company: string;
+      acronym: string;
+      areaServed: string;
+      coType: string;
+      areaType: string;
+    };
+  }>;
+}
+
+export function fetchWaterCompanyBoundaries(): Promise<WaterCompanyBoundariesGeoJSON> {
+  return fetchJSON('/datasets/water-company-boundaries');
+}
+
+// --- EDM Storm Overflows 2024 ---
+
+export interface EDMOverflowsGeoJSON {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    geometry: { type: 'Point'; coordinates: [number, number] };
+    properties: {
+      company: string;
+      siteName: string;
+      permitRef: string;
+      assetType: string;
+      receivingWater: string;
+      totalDurationHrs: number;
+      countedSpills: number;
+      edmOperationPct: number;
+      treatmentType: string;
+      localAuthority: string;
+      constituency: string;
+      country: string;
+      riverBasinDistrict: string;
+    };
+  }>;
+}
+
+export function fetchEDMOverflows(): Promise<EDMOverflowsGeoJSON> {
+  return fetchJSON('/datasets/edm-overflows');
+}
+
+// --- WINEP Storm Overflows Under Investigation ---
+
+export interface WINEPOverflowsGeoJSON {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    geometry: { type: 'Point'; coordinates: [number, number] };
+    properties: {
+      company: string;
+      siteName: string;
+      waterBody: string;
+      waterBodyId: string;
+      waterBodyType: string;
+      rbd: string;
+      area: string;
+      actionType: string;
+      certainty: string;
+      coreObligation: string;
+      driverCode: string;
+      winepId: string;
+      uniqueId: string;
+      implementationScope: string;
+    };
+  }>;
+}
+
+export function fetchWINEPOverflows(): Promise<WINEPOverflowsGeoJSON> {
+  return fetchJSON('/datasets/winep-overflows');
+}
+
+// --- EDM Storm Overflow Annual Returns ---
+
+export interface StormOverflowCompanySummary {
+  company: string;
+  shortName: string;
+  totalOverflows: number;
+  activeOverflows: number;
+  edmCommissioned: number;
+  overflowsWithSpillData: number;
+  avgSpillsPerOverflow: number | null;
+  avgDurationPerSpill: number | null;
+  totalMonitoredSpills: number;
+  totalSpillDurationHrs: number | null;
+  pctSpilled10OrLess: number | null;
+  pctSpilled60OrMore: number | null;
+  pctEdmAbove90: number | null;
+}
+
+export interface StormOverflowSummary {
+  year: number;
+  companies: StormOverflowCompanySummary[];
+  totals: {
+    totalOverflows: number;
+    activeOverflows: number;
+    totalMonitoredSpills: number;
+    avgSpillsPerOverflow: number | null;
+    avgDurationPerSpill: number | null;
+  };
+}
+
+export interface StormOverflowData {
+  summary: StormOverflowSummary;
+  recordCount: number;
+}
+
+export function fetchStormOverflows(): Promise<StormOverflowData> {
+  return fetchJSON('/storm-overflows');
+}
+
+export function fetchStormOverflowSummary(): Promise<StormOverflowSummary> {
+  return fetchJSON('/storm-overflows/summary');
 }

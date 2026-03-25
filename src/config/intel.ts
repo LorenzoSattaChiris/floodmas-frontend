@@ -32,6 +32,16 @@ export const DATA_SOURCES: DataSource[] = [
   { id: 15, name: 'RoFRS Postcodes',           type: 'dataset', auth: 'none',    provider: 'EA / Defra',             data: 'Flood risk per postcode — 269 K postcodes',                                               refresh: '∞',        status: 'static' },
   { id: 16, name: 'RoFRS Properties',          type: 'dataset', auth: 'none',    provider: 'EA / Defra',             data: 'Property-level flood risk aggregation — 2.4 M rows',                                      refresh: '∞',        status: 'static' },
   { id: 17, name: 'LLFA Boundaries',           type: 'dataset', auth: 'none',    provider: 'Russell / Defra',        data: '218 county / UA boundaries + LFRMS audit — GeoJSON + XLSX',                               refresh: '∞',        status: 'static' },
+  { id: 18, name: 'EDM Storm Overflows',       type: 'dataset', auth: 'none',    provider: 'Environment Agency',     data: '2024 annual return — 14 K+ storm overflows across 10 water companies (XLSX)',              refresh: '∞',        status: 'static' },
+  { id: 19, name: 'WFD River Catchments',      type: 'dataset', auth: 'none',    provider: 'Defra',                  data: '4 092 WFD Cycle 2 river waterbody catchment polygons (BNG → WGS 84)',                      refresh: '∞',        status: 'static' },
+  { id: 20, name: 'NFM Hotspots',              type: 'dataset', auth: 'none',    provider: 'Environment Agency',     data: '1 516 Natural Flood Management priority hotspot polygons (BNG → WGS 84)',                  refresh: '∞',        status: 'static' },
+  { id: 21, name: 'Schools (State-Funded)',    type: 'dataset', auth: 'none',    provider: 'DfE / Edubase (GIAS)',   data: '~22 K open state-funded schools (postcode → WGS 84) — vulnerability infrastructure layer', refresh: '∞',        status: 'static' },
+  { id: 22, name: 'Health & Care (CQC)',       type: 'dataset', auth: 'none',    provider: 'CQC',                    data: '~57 K CQC-regulated locations — hospitals, GPs, care homes, dentists (postcode → WGS 84)', refresh: '∞',        status: 'static' },
+  { id: 23, name: 'Bathing Water Quality',     type: 'dataset', auth: 'none',    provider: 'Environment Agency',     data: '460 designated bathing waters with annual rBWD classification (Excellent / Good / Sufficient / Poor)', refresh: '∞', status: 'static' },
+  { id: 24, name: 'Ramsar Wetlands (England)', type: 'dataset', auth: 'none',    provider: 'Natural England / Defra', data: '73 Ramsar Convention wetlands of international importance — 1 291 polygons (WGS 84)', refresh: '∞', status: 'static' },
+  { id: 25, name: 'Water Company Boundaries', type: 'dataset', auth: 'none',    provider: 'Ofwat / Stream',         data: '432 Ofwat water company service area boundary polygons — 27 companies (WGS 84)', refresh: '∞', status: 'static' },
+  { id: 26, name: 'EDM Storm Overflows 2024', type: 'dataset', auth: 'none',    provider: 'EA / Rivers Trust / CaBA', data: '16 625 monitored storm overflow discharge points — spill counts & duration from 11 water companies (WGS 84)', refresh: '∞', status: 'static' },
+  { id: 27, name: 'WINEP Overflows Under Investigation', type: 'dataset', auth: 'none', provider: 'EA / Rivers Trust / CaBA', data: '4 320 WINEP intermittent discharge sites under investigation from 10 water companies (WGS 84)', refresh: '∞', status: 'static' },
 ];
 
 // ── Agents ───────────────────────────────────────────────────────────
@@ -81,7 +91,7 @@ export const AGENTS: Agent[] = [
     model: 'GPT-5.4-mini',
     color: '#f97316',
     description: 'EA flood-zone classification, infrastructure risk matrices, population-impact estimation, and GBT ensemble risk scoring.',
-    toolIds: ['get_flood_zone_info', 'assess_infrastructure_vulnerability', 'estimate_population_at_risk', 'predict_flood_risk', 'query_flood_warning_areas', 'query_flood_risk_areas', 'query_llfa', 'query_imd_deprivation'],
+    toolIds: ['get_flood_zone_info', 'assess_infrastructure_vulnerability', 'estimate_population_at_risk', 'predict_flood_risk', 'query_flood_warning_areas', 'query_flood_risk_areas', 'query_llfa', 'query_imd_deprivation', 'query_wfd_catchments', 'query_nfm_hotspots', 'query_storm_overflows', 'query_schools', 'query_hospitals', 'query_bathing_waters', 'query_ramsar', 'query_water_company_boundaries', 'query_edm_overflows', 'query_winep_overflows'],
   },
   {
     id: 'emergencyResponse',
@@ -131,6 +141,16 @@ export const TOOLS: Tool[] = [
   { id: 'query_flood_risk_areas',             name: 'Flood Risk Areas',             category: 'map-layer', specialist: 'Risk Analysis', description: 'Defra APSFR — areas of potentially significant flood risk' },
   { id: 'query_llfa',                         name: 'LLFA Boundaries',              category: 'map-layer', specialist: 'Risk Analysis', description: 'Lead Local Flood Authority boundaries + LFRMS audit scores' },
   { id: 'query_imd_deprivation',              name: 'IMD Deprivation',              category: 'map-layer', specialist: 'Risk Analysis', description: 'IMD 2019 decile distribution and flood + deprivation vulnerability' },
+  { id: 'query_wfd_catchments',               name: 'WFD Catchments',               category: 'map-layer', specialist: 'Risk Analysis', description: 'WFD Cycle 2 river waterbody catchment boundaries with area and length' },
+  { id: 'query_nfm_hotspots',                 name: 'NFM Hotspots',                 category: 'map-layer', specialist: 'Risk Analysis', description: 'EA Natural Flood Management priority hotspot areas' },
+  { id: 'query_storm_overflows',              name: 'Storm Overflows',              category: 'risk',      specialist: 'Risk Analysis', description: 'EDM 2024 storm overflow spill statistics per water company' },
+  { id: 'query_schools',                      name: 'Schools (State-Funded)',        category: 'map-layer', specialist: 'Risk Analysis', description: '~22K state-funded schools — flood vulnerability infrastructure layer' },
+  { id: 'query_hospitals',                     name: 'Health & Care (CQC)',           category: 'map-layer', specialist: 'Risk Analysis', description: '~57K CQC-regulated health/care locations — hospitals, GPs, care homes, dentists' },
+  { id: 'query_bathing_waters',                name: 'Bathing Water Quality',         category: 'map-layer', specialist: 'Risk Analysis', description: '460 EA designated bathing waters with annual rBWD water quality classification' },
+  { id: 'query_ramsar',                        name: 'Ramsar Wetlands',               category: 'map-layer', specialist: 'Risk Analysis', description: '73 Ramsar Convention wetlands of international importance (England) — 1 291 polygons' },
+  { id: 'query_water_company_boundaries',      name: 'Water Company Boundaries',      category: 'map-layer', specialist: 'Risk Analysis', description: '432 Ofwat water company service area boundary polygons — 27 companies' },
+  { id: 'query_edm_overflows',                 name: 'EDM Storm Overflows 2024',      category: 'map-layer', specialist: 'Risk Analysis', description: '16 625 monitored storm overflow discharge points with spill counts & duration' },
+  { id: 'query_winep_overflows',               name: 'WINEP Overflows Under Investigation', category: 'map-layer', specialist: 'Risk Analysis', description: '4 320 WINEP intermittent discharge sites under investigation from 10 water companies' },
 
   // Emergency Response (7)
   { id: 'generate_flood_alert',   name: 'Flood Alert Generator',   category: 'emergency',  specialist: 'Emergency Response', description: 'EA-standard alerts (Flood Watch → Severe Flood Warning)' },

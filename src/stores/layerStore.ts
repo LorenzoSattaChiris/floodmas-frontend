@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { LAYER_CONFIGS } from '../config/layers';
 
+export type LLFAChoropleth = 'none' | 'defences' | 'spend' | 'risk' | 'protected';
+
 const TOGGLE_KEY = 'floodmas-panel-toggles';
 
 function loadToggles(): { left: boolean; right: boolean } {
@@ -29,6 +31,8 @@ interface LayerState {
   setAllLayers: (visible: boolean) => void;
   setBaseMap: (style: BaseMapStyle) => void;
   setMapZoom: (zoom: number) => void;
+  llfaChoropleth: LLFAChoropleth;
+  setLLFAChoropleth: (mode: LLFAChoropleth) => void;
   toggleLeftPanel: () => void;
   toggleRightPanel: () => void;
 }
@@ -45,6 +49,7 @@ export const useLayerStore = create<LayerState>((set) => ({
   mapZoom: 5.8,
   leftPanelOpen: savedToggles.left,
   rightPanelOpen: savedToggles.right,
+  llfaChoropleth: 'none' as LLFAChoropleth,
 
   toggleLayer: (id) =>
     set((state) => {
@@ -72,6 +77,8 @@ export const useLayerStore = create<LayerState>((set) => ({
       if (style !== 'default') next.add(style);
       return { baseMap: style, visibleLayers: next };
     }),
+
+  setLLFAChoropleth: (mode) => set({ llfaChoropleth: mode }),
 
   toggleLeftPanel: () => set((s) => {
     const next = !s.leftPanelOpen;

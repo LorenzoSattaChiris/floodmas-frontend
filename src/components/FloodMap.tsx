@@ -25,6 +25,15 @@ import {
   useLLFABoundaries,
   useIMDBoundaries,
   useRiskLayerFeatures,
+  useWFDCatchments,
+  useNFMHotspots,
+  useSchools,
+  useHospitals,
+  useBathingWaters,
+  useRamsar,
+  useWaterCompanyBoundaries,
+  useEDMOverflows,
+  useWINEPOverflows,
 } from '../hooks/useFloodData';
 import type {
   FloodWarning,
@@ -166,12 +175,63 @@ function cdsReanalysisColor(soilMoisture: number, precip: number): string {
   return '#7c3aed';                          // Default — purple
 }
 
+// ─── LLFA Choropleth Paint Definitions ───────────────────────────────
+function getLLFAChoroplethPaint(mode: string) {
+  if (mode === 'none') {
+    return {
+      fillColor: ['case', ['get', 'hasStrategy'], '#10b981', '#64748b'] as any,
+      fillOpacity: 0.12,
+      lineColor: ['case', ['get', 'hasStrategy'], '#10b981', '#64748b'] as any,
+      lineOpacity: 0.7,
+    };
+  }
+
+  const ramps: Record<string, { prop: string; stops: (number | string)[] }> = {
+    defences: {
+      prop: 'defenceCount',
+      stops: ['#1e293b', 1, '#86efac', 50, '#22c55e', 150, '#16a34a', 300, '#15803d', 500, '#14532d'],
+    },
+    spend: {
+      prop: 'totalSpend',
+      stops: ['#1e293b', 1, '#bfdbfe', 100000, '#60a5fa', 1000000, '#3b82f6', 5000000, '#1d4ed8', 10000000, '#1e3a5f'],
+    },
+    risk: {
+      prop: 'propertiesHighRisk',
+      stops: ['#dcfce7', 100, '#fef08a', 500, '#fbbf24', 2000, '#f97316', 5000, '#ef4444', 10000, '#991b1b'],
+    },
+    protected: {
+      prop: 'homesProtected',
+      stops: ['#1e293b', 1, '#d9f99d', 50, '#84cc16', 200, '#65a30d', 500, '#4d7c0f'],
+    },
+  };
+
+  const r = ramps[mode];
+  if (!r) return getLLFAChoroplethPaint('none');
+
+  return {
+    fillColor: [
+      'case', ['==', ['get', r.prop], null], '#374151',
+      ['step', ['coalesce', ['get', r.prop], 0], ...r.stops],
+    ] as any,
+    fillOpacity: 0.45,
+    lineColor: '#ffffff' as any,
+    lineOpacity: 0.25,
+  };
+}
+
+function fmtMoney(v: number): string {
+  if (v >= 1_000_000) return `£${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `£${Math.round(v / 1_000)}K`;
+  return `£${v}`;
+}
+
 // ─── Component ───────────────────────────────────────────────────────
 export default function FloodMap() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useMapRef();
   const [mapLoaded, setMapLoaded] = useState(false);
   const visibleLayers = useLayerStore((s) => s.visibleLayers);
+  const llfaChoropleth = useLayerStore((s) => s.llfaChoropleth);
 
   const { data: floods } = useFloodWarnings();
   const { data: levelStations } = useWaterLevelStations();
@@ -192,6 +252,15 @@ export default function FloodMap() {
   const { data: mainRivers } = useMainRivers();
   const { data: floodRiskAreas } = useFloodRiskAreas();
   const { data: llfaBoundaries } = useLLFABoundaries();
+  const { data: wfdCatchments } = useWFDCatchments();
+  const { data: nfmHotspots } = useNFMHotspots();
+  const { data: schools } = useSchools();
+  const { data: hospitals } = useHospitals();
+  const { data: bathingWaters } = useBathingWaters();
+  const { data: ramsarWetlands } = useRamsar();
+  const { data: waterCompanyBoundaries } = useWaterCompanyBoundaries();
+  const { data: edmOverflows } = useEDMOverflows();
+  const { data: winepOverflows } = useWINEPOverflows();
 
   const setMapZoom = useLayerStore((s) => s.setMapZoom);
   const [mapBbox, setMapBbox] = useState<string | null>(null);
@@ -342,6 +411,214 @@ export default function FloodMap() {
             '#374151'],
           'line-width': ['interpolate', ['linear'], ['zoom'], 7, 0.3, 12, 1],
           'line-opacity': 0.5,
+        },
+        layout: { visibility: 'none' },
+      });
+
+      // ─ 1ad. WFD River Waterbody Catchments ─
+      map.addSource('wfd-catchments', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'wfd-catchments-fill',
+        type: 'fill',
+        source: 'wfd-catchments',
+        paint: { 'fill-color': '#0891b2', 'fill-opacity': 0.1 },
+        layout: { visibility: 'none' },
+      });
+      map.addLayer({
+        id: 'wfd-catchments-outline',
+        type: 'line',
+        source: 'wfd-catchments',
+        paint: {
+          'line-color': '#0891b2',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 5, 0.5, 10, 1.5],
+          'line-opacity': 0.6,
+        },
+        layout: { visibility: 'none' },
+      });
+
+      // ─ 1ae. NFM Hotspots ─
+      map.addSource('nfm-hotspots', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'nfm-hotspots-fill',
+        type: 'fill',
+        source: 'nfm-hotspots',
+        paint: { 'fill-color': '#84cc16', 'fill-opacity': 0.18 },
+        layout: { visibility: 'none' },
+      });
+      map.addLayer({
+        id: 'nfm-hotspots-outline',
+        type: 'line',
+        source: 'nfm-hotspots',
+        paint: {
+          'line-color': '#84cc16',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 5, 0.5, 10, 1.5],
+          'line-opacity': 0.6,
+        },
+        layout: { visibility: 'none' },
+      });
+
+      // ─ 1af. Schools (point layer) ─
+      map.addSource('schools', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'schools-circles',
+        type: 'circle',
+        source: 'schools',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 2, 10, 5, 14, 8],
+          'circle-color': '#f59e0b',
+          'circle-opacity': 0.85,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': 'rgba(255,255,255,0.5)',
+        },
+        layout: { visibility: 'none' },
+      });
+
+      // ─ 1ag. Hospitals / CQC locations (point layer) ─
+      map.addSource('hospitals', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'hospitals-circles',
+        type: 'circle',
+        source: 'hospitals',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 2, 10, 5, 14, 8],
+          'circle-color': '#ec4899',
+          'circle-opacity': 0.85,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': 'rgba(255,255,255,0.5)',
+        },
+        layout: { visibility: 'none' },
+      });
+
+      // ─ 1ah. Bathing Water Quality (point layer, colour-coded by classification) ─
+      map.addSource('bathing-waters', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'bathing-waters-circles',
+        type: 'circle',
+        source: 'bathing-waters',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 4, 10, 7, 14, 12],
+          'circle-color': [
+            'match', ['get', 'classification'],
+            'Excellent', '#3b82f6',
+            'Good', '#22c55e',
+            'Sufficient', '#eab308',
+            'Poor', '#ef4444',
+            '#94a3b8',
+          ],
+          'circle-opacity': 0.9,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': 'rgba(255,255,255,0.7)',
+        },
+        layout: { visibility: 'none' },
+      });
+
+      // ─ 1ai. Ramsar Wetlands (polygon layer) ─
+      map.addSource('ramsar-wetlands', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'ramsar-wetlands-fill',
+        type: 'fill',
+        source: 'ramsar-wetlands',
+        paint: { 'fill-color': '#059669', 'fill-opacity': 0.18 },
+        layout: { visibility: 'none' },
+      });
+      map.addLayer({
+        id: 'ramsar-wetlands-outline',
+        type: 'line',
+        source: 'ramsar-wetlands',
+        paint: {
+          'line-color': '#059669',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 5, 0.5, 10, 1.5],
+          'line-opacity': 0.6,
+        },
+        layout: { visibility: 'none' },
+      });
+
+      // ─ 1aj. Water Company Boundaries (polygon layer) ─
+      map.addSource('water-company-boundaries', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'water-company-boundaries-fill',
+        type: 'fill',
+        source: 'water-company-boundaries',
+        paint: { 'fill-color': '#7c3aed', 'fill-opacity': 0.12 },
+        layout: { visibility: 'none' },
+      });
+      map.addLayer({
+        id: 'water-company-boundaries-outline',
+        type: 'line',
+        source: 'water-company-boundaries',
+        paint: {
+          'line-color': '#7c3aed',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 5, 0.8, 10, 2],
+          'line-opacity': 0.7,
+        },
+        layout: { visibility: 'none' },
+      });
+
+      // ─ 1ak. EDM Storm Overflows 2024 (point layer, colour-coded by spill count) ─
+      map.addSource('edm-overflows', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'edm-overflows-circles',
+        type: 'circle',
+        source: 'edm-overflows',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 2, 10, 5, 14, 9],
+          'circle-color': ['interpolate', ['linear'], ['get', 'countedSpills'],
+            0, '#22c55e',
+            10, '#eab308',
+            40, '#f97316',
+            100, '#ef4444',
+            200, '#991b1b'],
+          'circle-opacity': 0.85,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': 'rgba(255,255,255,0.5)',
+        },
+        layout: { visibility: 'none' },
+      });
+
+      // ─ 1al. WINEP Storm Overflows Under Investigation (point layer, colour-coded by action type) ─
+      map.addSource('winep-overflows', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'winep-overflows-circles',
+        type: 'circle',
+        source: 'winep-overflows',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 2, 10, 5, 14, 9],
+          'circle-color': ['match', ['get', 'actionType'],
+            'INV', '#eab308',
+            'MON', '#3b82f6',
+            'IMP', '#22c55e',
+            'ND', '#a855f7',
+            '#9ca3af'],
+          'circle-opacity': 0.85,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': 'rgba(255,255,255,0.5)',
         },
         layout: { visibility: 'none' },
       });
@@ -687,6 +964,15 @@ export default function FloodMap() {
       addPopupHandler(map, 'flood-risk-areas-fill', popupFloodRiskArea);
       addPopupHandler(map, 'llfa-boundaries-fill', popupLLFA);
       addPopupHandler(map, 'imd-deprivation-fill', popupIMD);
+      addPopupHandler(map, 'wfd-catchments-fill', popupWFDCatchment);
+      addPopupHandler(map, 'nfm-hotspots-fill', popupNFMHotspot);
+      addPopupHandler(map, 'schools-circles', popupSchool);
+      addPopupHandler(map, 'hospitals-circles', popupHospital);
+      addPopupHandler(map, 'bathing-waters-circles', popupBathingWater);
+      addPopupHandler(map, 'ramsar-wetlands-fill', popupRamsar);
+      addPopupHandler(map, 'water-company-boundaries-fill', popupWaterCompany);
+      addPopupHandler(map, 'edm-overflows-circles', popupEDMOverflow);
+      addPopupHandler(map, 'winep-overflows-circles', popupWINEPOverflow);
       addPopupHandler(map, 'main-rivers-line', popupMainRiver);
       addPopupHandler(map, 'historic-floods-fill', popupHistoricFlood);
       addPopupHandler(map, 'flood-defences-line', popupDefence);
@@ -1044,6 +1330,17 @@ export default function FloodMap() {
     if (src) src.setData(llfaBoundaries as any);
   }, [llfaBoundaries, mapLoaded]);
 
+  // ─── LLFA choropleth paint sync ─────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapLoaded || !map || !map.getLayer('llfa-boundaries-fill')) return;
+    const paint = getLLFAChoroplethPaint(llfaChoropleth);
+    map.setPaintProperty('llfa-boundaries-fill', 'fill-color', paint.fillColor);
+    map.setPaintProperty('llfa-boundaries-fill', 'fill-opacity', paint.fillOpacity);
+    map.setPaintProperty('llfa-boundaries-outline', 'line-color', paint.lineColor);
+    map.setPaintProperty('llfa-boundaries-outline', 'line-opacity', paint.lineOpacity);
+  }, [llfaChoropleth, mapLoaded]);
+
   // ─── Sync IMD deprivation boundaries ────────────────────────
   useEffect(() => {
     const map = mapRef.current;
@@ -1051,6 +1348,78 @@ export default function FloodMap() {
     const src = map.getSource('imd-deprivation') as maplibregl.GeoJSONSource;
     if (src) src.setData(imdData as any);
   }, [imdData, mapLoaded]);
+
+  // ─── Sync WFD catchments ────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapLoaded || !map || !wfdCatchments) return;
+    const src = map.getSource('wfd-catchments') as maplibregl.GeoJSONSource;
+    if (src) src.setData(wfdCatchments as any);
+  }, [wfdCatchments, mapLoaded]);
+
+  // ─── Sync NFM hotspots ──────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapLoaded || !map || !nfmHotspots) return;
+    const src = map.getSource('nfm-hotspots') as maplibregl.GeoJSONSource;
+    if (src) src.setData(nfmHotspots as any);
+  }, [nfmHotspots, mapLoaded]);
+
+  // ─── Sync schools ──────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapLoaded || !map || !schools) return;
+    const src = map.getSource('schools') as maplibregl.GeoJSONSource;
+    if (src) src.setData(schools as any);
+  }, [schools, mapLoaded]);
+
+  // ─── Sync hospitals ──────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapLoaded || !map || !hospitals) return;
+    const src = map.getSource('hospitals') as maplibregl.GeoJSONSource;
+    if (src) src.setData(hospitals as any);
+  }, [hospitals, mapLoaded]);
+
+  // ─── Sync bathing waters ──────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapLoaded || !map || !bathingWaters) return;
+    const src = map.getSource('bathing-waters') as maplibregl.GeoJSONSource;
+    if (src) src.setData(bathingWaters as any);
+  }, [bathingWaters, mapLoaded]);
+
+  // ─── Sync Ramsar Wetlands ──────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapLoaded || !map || !ramsarWetlands) return;
+    const src = map.getSource('ramsar-wetlands') as maplibregl.GeoJSONSource;
+    if (src) src.setData(ramsarWetlands as any);
+  }, [ramsarWetlands, mapLoaded]);
+
+  // ─── Sync Water Company Boundaries ───────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapLoaded || !map || !waterCompanyBoundaries) return;
+    const src = map.getSource('water-company-boundaries') as maplibregl.GeoJSONSource;
+    if (src) src.setData(waterCompanyBoundaries as any);
+  }, [waterCompanyBoundaries, mapLoaded]);
+
+  // ─── Sync EDM Storm Overflows ────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapLoaded || !map || !edmOverflows) return;
+    const src = map.getSource('edm-overflows') as maplibregl.GeoJSONSource;
+    if (src) src.setData(edmOverflows as any);
+  }, [edmOverflows, mapLoaded]);
+
+  // ─── Sync WINEP Storm Overflows ────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapLoaded || !map || !winepOverflows) return;
+    const src = map.getSource('winep-overflows') as maplibregl.GeoJSONSource;
+    if (src) src.setData(winepOverflows as any);
+  }, [winepOverflows, mapLoaded]);
 
   // ─── Sync risk polygon layers ──────────────────────────────
   const riskDataMap: Record<string, typeof riskRiversSeaData> = {
@@ -1099,6 +1468,15 @@ export default function FloodMap() {
       'flood-risk-areas': ['flood-risk-areas-fill', 'flood-risk-areas-outline'],
       'llfa-boundaries': ['llfa-boundaries-fill', 'llfa-boundaries-outline'],
       'imd-deprivation': ['imd-deprivation-fill', 'imd-deprivation-outline'],
+      'wfd-catchments': ['wfd-catchments-fill', 'wfd-catchments-outline'],
+      'nfm-hotspots': ['nfm-hotspots-fill', 'nfm-hotspots-outline'],
+      'schools': ['schools-circles'],
+      'hospitals': ['hospitals-circles'],
+      'bathing-waters': ['bathing-waters-circles'],
+      'ramsar-wetlands': ['ramsar-wetlands-fill', 'ramsar-wetlands-outline'],
+      'water-company-boundaries': ['water-company-boundaries-fill', 'water-company-boundaries-outline'],
+      'edm-overflows': ['edm-overflows-circles'],
+      'winep-overflows': ['winep-overflows-circles'],
       'flood-defences': ['flood-defences-line', 'flood-defences-fill'],
       'historic-floods': ['historic-floods-fill', 'historic-floods-outline'],
       'main-rivers': ['main-rivers-line'],
@@ -1460,6 +1838,27 @@ function popupLLFA(p: Record<string, string | number>) {
   const statusColor = hasStrategy ? '#10b981' : '#64748b';
   const statusLabel = hasStrategy ? 'LFRMS Available' : 'No LFRMS Data';
 
+  // Flood management stats
+  const defenceCount = p.defenceCount != null && p.defenceCount !== '' ? Number(p.defenceCount) : null;
+  const totalSpend = p.totalSpend != null && p.totalSpend !== '' ? Number(p.totalSpend) : null;
+  const propertiesHighRisk = p.propertiesHighRisk != null && p.propertiesHighRisk !== '' ? Number(p.propertiesHighRisk) : null;
+  const propertiesHighRiskPct = p.propertiesHighRiskPct != null && p.propertiesHighRiskPct !== '' ? Number(p.propertiesHighRiskPct) : null;
+  const homesProtected = p.homesProtected != null && p.homesProtected !== '' ? Number(p.homesProtected) : null;
+  const defenceCondition = p.defenceCondition != null && p.defenceCondition !== '' ? Number(p.defenceCondition) : null;
+  const hasStats = defenceCount != null || totalSpend != null || propertiesHighRisk != null || homesProtected != null;
+
+  const statsHTML = hasStats ? `
+    <div class="border-t border-white/10 pt-1.5 mt-1.5 space-y-1">
+      <p class="text-[9px] font-semibold opacity-60">Flood Management</p>
+      <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px]">
+        ${defenceCount != null ? `<span class="opacity-50">Defences:</span><span class="font-mono">${defenceCount.toLocaleString()}</span>` : ''}
+        ${defenceCondition != null ? `<span class="opacity-50">Avg condition:</span><span class="font-mono">${defenceCondition.toFixed(2)}/5</span>` : ''}
+        ${totalSpend != null ? `<span class="opacity-50">Capital spend:</span><span class="font-mono">${fmtMoney(totalSpend)}</span>` : ''}
+        ${propertiesHighRisk != null ? `<span class="opacity-50">High-risk props:</span><span class="font-mono">${propertiesHighRisk.toLocaleString()}${propertiesHighRiskPct != null ? ` (${propertiesHighRiskPct}%)` : ''}</span>` : ''}
+        ${homesProtected != null ? `<span class="opacity-50">Homes protected:</span><span class="font-mono">${homesProtected.toLocaleString()}</span>` : ''}
+      </div>
+    </div>` : '';
+
   let strategyHTML = '';
   if (hasStrategy && p.strategy) {
     try {
@@ -1519,6 +1918,7 @@ function popupLLFA(p: Record<string, string | number>) {
       <span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style="background:${statusColor}22;color:${statusColor}">${statusLabel}</span>
     </div>
     ${code ? `<p class="text-[9px] opacity-40">ONS Code: ${code}</p>` : ''}
+    ${statsHTML}
     ${strategyHTML}
   </div>`;
 }
@@ -1551,6 +1951,149 @@ function popupIMD(p: Record<string, string | number>) {
       ${row('Living Env.', p.livingEnvDecile)}
     </div>
     <p class="text-[10px] opacity-40 pt-1">Pop: ${pop}</p>
+  </div>`;
+}
+
+function popupWFDCatchment(p: Record<string, string | number>) {
+  const name = p.wb_name && String(p.wb_name).trim() ? p.wb_name : 'Unnamed Catchment';
+  const areaKm2 = p.area_km2 != null ? Number(p.area_km2).toLocaleString('en-GB', { maximumFractionDigits: 1 }) : '—';
+  const lengthKm = p.length_km != null ? Number(p.length_km).toLocaleString('en-GB', { maximumFractionDigits: 1 }) : '—';
+  return `<div class="space-y-1">
+    <div class="flex items-center gap-2">
+      <span class="w-3 h-3 rounded-sm border" style="background:#0891b233;border-color:#0891b2"></span>
+      <span class="font-bold text-xs">${name}</span>
+    </div>
+    ${p.wb_cat ? `<p class="text-[11px] opacity-80">${p.wb_cat}</p>` : ''}
+    ${p.rbd_name ? `<p class="text-[11px] opacity-70">RBD: ${p.rbd_name}</p>` : ''}
+    <p class="text-[10px] opacity-60">Area: ${areaKm2} km² · Length: ${lengthKm} km</p>
+    ${p.wb_id && String(p.wb_id).trim() ? `<p class="text-[9px] opacity-40">WB ID: ${p.wb_id}</p>` : ''}
+  </div>`;
+}
+
+function popupNFMHotspot(p: Record<string, string | number>) {
+  return `<div class="space-y-1">
+    <div class="flex items-center gap-2">
+      <span class="w-3 h-3 rounded-sm border" style="background:#84cc1633;border-color:#84cc16"></span>
+      <span class="font-bold text-xs">${p.layer || 'NFM Hotspot'}</span>
+    </div>
+    <p class="text-[10px] opacity-70">Priority area for Natural Flood Management interventions</p>
+  </div>`;
+}
+
+function popupSchool(p: Record<string, string | number>) {
+  return `<div class="space-y-1">
+    <div class="flex items-center gap-2">
+      <span class="w-3 h-3 rounded-full" style="background:#f59e0b"></span>
+      <span class="font-bold text-xs">${p.name || 'School'}</span>
+    </div>
+    <p class="text-[10px] opacity-60">${p.type}${p.phase ? ` · ${p.phase}` : ''}</p>
+    <p class="text-[10px] opacity-60">${p.town ? `${p.town}, ` : ''}${p.postcode || ''}</p>
+    <p class="text-[10px] opacity-50">${p.la || ''}${p.constituency ? ` · ${p.constituency}` : ''}</p>
+  </div>`;
+}
+
+function popupHospital(p: Record<string, string | number>) {
+  const svcTypes = String(p.serviceTypes || '').replace(/\|/g, ', ');
+  const cqcLink = p.cqcUrl ? `<a href="${p.cqcUrl}" target="_blank" rel="noopener" class="text-[9px] underline opacity-50 hover:opacity-80">CQC page →</a>` : '';
+  return `<div class="space-y-1">
+    <div class="flex items-center gap-2">
+      <span class="w-3 h-3 rounded-full" style="background:#ec4899"></span>
+      <span class="font-bold text-xs">${p.name || 'Health / Care Location'}</span>
+    </div>
+    ${svcTypes ? `<p class="text-[10px] opacity-70">${svcTypes}</p>` : ''}
+    <p class="text-[10px] opacity-60">${p.address ? `${p.address}, ` : ''}${p.postcode || ''}</p>
+    <p class="text-[10px] opacity-50">${p.la || ''}${p.region ? ` · ${p.region}` : ''}</p>
+    ${p.provider ? `<p class="text-[9px] opacity-40">Provider: ${p.provider}</p>` : ''}
+    ${cqcLink}
+  </div>`;
+}
+
+function popupBathingWater(p: Record<string, string | number>) {
+  const cl = String(p.classification || 'Unknown');
+  const clColor: Record<string, string> = { 'Excellent': '#3b82f6', 'Good': '#22c55e', 'Sufficient': '#eab308', 'Poor': '#ef4444' };
+  const color = clColor[cl] || '#94a3b8';
+  const yr = p.classificationYear ? ` (${p.classificationYear})` : '';
+  const bwqLink = p.bwqUrl ? `<a href="${p.bwqUrl}" target="_blank" rel="noopener" class="text-[9px] underline opacity-50 hover:opacity-80">EA profile →</a>` : '';
+  const season = (p.seasonStart && p.seasonEnd) ? `<p class="text-[10px] opacity-50">Season: ${p.seasonStart} — ${p.seasonEnd}</p>` : '';
+  return `<div class="space-y-1">
+    <div class="flex items-center gap-2">
+      <span class="w-3 h-3 rounded-full" style="background:${color}"></span>
+      <span class="font-bold text-xs">${p.name || 'Bathing Water'}</span>
+    </div>
+    <p class="text-[10px]"><span class="font-semibold" style="color:${color}">${cl}</span>${yr}</p>
+    ${p.district ? `<p class="text-[10px] opacity-60">${p.district}${p.county ? `, ${p.county}` : ''}</p>` : ''}
+    ${season}
+    ${String(p.pollutionRiskForecasting) === 'true' ? '<p class="text-[9px] opacity-50">⚠ Pollution risk forecasting active</p>' : ''}
+    ${p.sewerageUndertaker ? `<p class="text-[9px] opacity-40">${p.sewerageUndertaker}</p>` : ''}
+    ${bwqLink}
+  </div>`;
+}
+
+function popupRamsar(p: Record<string, string | number>) {
+  const area = Number(p.area_ha);
+  const areaStr = area > 0 ? `${area.toLocaleString('en-GB', { maximumFractionDigits: 0 })} ha` : '';
+  return `<div class="space-y-1">
+    <div class="flex items-center gap-2">
+      <span class="w-3 h-3 rounded-sm border" style="background:#05966933;border-color:#059669"></span>
+      <span class="font-bold text-xs">${p.name || 'Ramsar Wetland'}</span>
+    </div>
+    <p class="text-[10px] opacity-70">Wetland of International Importance</p>
+    ${areaStr ? `<p class="text-[10px] opacity-60">${areaStr}</p>` : ''}
+    ${p.code ? `<p class="text-[9px] opacity-40">${p.code}</p>` : ''}
+  </div>`;
+}
+
+function popupWaterCompany(p: Record<string, string | number>) {
+  const typeLabel = String(p.coType || '').replace(/^\w/, (c: string) => c.toUpperCase());
+  return `<div class="space-y-1">
+    <div class="flex items-center gap-2">
+      <span class="w-3 h-3 rounded-sm border" style="background:#7c3aed22;border-color:#7c3aed"></span>
+      <span class="font-bold text-xs">${p.company || 'Water Company'}</span>
+    </div>
+    ${p.acronym ? `<p class="text-[10px] opacity-70">${p.acronym}</p>` : ''}
+    ${typeLabel ? `<p class="text-[10px] opacity-60">${typeLabel}</p>` : ''}
+    ${p.areaType ? `<p class="text-[10px] opacity-50">${p.areaType}</p>` : ''}
+    ${p.areaServed && p.areaServed !== p.company ? `<p class="text-[9px] opacity-40">Area: ${p.areaServed}</p>` : ''}
+  </div>`;
+}
+
+function popupWINEPOverflow(p: Record<string, string | number>) {
+  const actionColors: Record<string, string> = { INV: '#eab308', MON: '#3b82f6', IMP: '#22c55e', ND: '#a855f7' };
+  const actionLabels: Record<string, string> = { INV: 'Investigation', MON: 'Monitoring', IMP: 'Implementation', ND: 'No Deterioration' };
+  const ac = String(p.actionType || '');
+  const color = actionColors[ac] || '#9ca3af';
+  const label = actionLabels[ac] || ac;
+  return `<div class="space-y-1">
+    <div class="flex items-center gap-2">
+      <span class="w-3 h-3 rounded-full" style="background:${color}"></span>
+      <span class="font-bold text-xs">${p.siteName || 'WINEP Overflow'}</span>
+    </div>
+    <p class="text-[10px]"><span class="font-semibold" style="color:${color}">${label}</span> <span class="opacity-50">(${p.certainty || ''})</span></p>
+    <p class="text-[10px] opacity-70">${p.company || ''}</p>
+    ${p.waterBody ? `<p class="text-[10px] opacity-60">Water body: ${p.waterBody} (${p.waterBodyType || ''})</p>` : ''}
+    ${p.coreObligation ? `<p class="text-[10px] opacity-50">${p.rbd || ''} · ${p.coreObligation}</p>` : ''}
+    ${p.implementationScope ? `<p class="text-[9px] opacity-40">${String(p.implementationScope).slice(0, 120)}${String(p.implementationScope).length > 120 ? '…' : ''}</p>` : ''}
+    ${p.winepId ? `<p class="text-[9px] opacity-40">${p.winepId}</p>` : ''}
+  </div>`;
+}
+
+function popupEDMOverflow(p: Record<string, string | number>) {
+  const spills = Number(p.countedSpills) || 0;
+  const hrs = Number(p.totalDurationHrs) || 0;
+  const spillColor = spills === 0 ? '#22c55e' : spills < 10 ? '#eab308' : spills < 40 ? '#f97316' : spills < 100 ? '#ef4444' : '#991b1b';
+  const hrsStr = hrs > 0 ? `${hrs.toLocaleString('en-GB', { maximumFractionDigits: 1 })} hrs` : '0 hrs';
+  const edmPct = Number(p.edmOperationPct) || 0;
+  return `<div class="space-y-1">
+    <div class="flex items-center gap-2">
+      <span class="w-3 h-3 rounded-full" style="background:${spillColor}"></span>
+      <span class="font-bold text-xs">${p.siteName || 'Storm Overflow'}</span>
+    </div>
+    <p class="text-[10px]"><span class="font-semibold" style="color:${spillColor}">${spills} spills</span> <span class="opacity-50">(${hrsStr})</span></p>
+    <p class="text-[10px] opacity-70">${p.company || ''}</p>
+    ${p.receivingWater ? `<p class="text-[10px] opacity-60">Receiving: ${p.receivingWater}</p>` : ''}
+    ${p.localAuthority ? `<p class="text-[10px] opacity-50">${p.localAuthority}${p.constituency ? ` · ${p.constituency}` : ''}</p>` : ''}
+    ${edmPct ? `<p class="text-[9px] opacity-40">EDM operational: ${edmPct}%</p>` : ''}
+    ${p.permitRef ? `<p class="text-[9px] opacity-40">${p.permitRef}</p>` : ''}
   </div>`;
 }
 
