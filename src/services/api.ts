@@ -1,11 +1,34 @@
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
+// ─── Global fetch concurrency limiter ─────────────────────────────
+// Prevents the browser from sending more than MAX_CONCURRENT requests
+// to the API at once (e.g. when "Show All" enables every layer).
+const MAX_CONCURRENT = 4;
+let running = 0;
+const queue: Array<() => void> = [];
+
+function acquireSlot(): Promise<void> {
+  if (running < MAX_CONCURRENT) { running++; return Promise.resolve(); }
+  return new Promise<void>((resolve) => queue.push(resolve));
+}
+
+function releaseSlot() {
+  running--;
+  const next = queue.shift();
+  if (next) { running++; next(); }
+}
+
 async function fetchJSON<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`);
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status} ${res.statusText}`);
+  await acquireSlot();
+  try {
+    const res = await fetch(`${BASE_URL}${path}`);
+    if (!res.ok) {
+      throw new Error(`API error: ${res.status} ${res.statusText}`);
+    }
+    return res.json();
+  } finally {
+    releaseSlot();
   }
-  return res.json();
 }
 
 // --- EA Flood Monitoring ---

@@ -977,17 +977,19 @@ export default function FloodMap() {
       addPopupHandler(map, 'historic-floods-fill', popupHistoricFlood);
       addPopupHandler(map, 'flood-defences-line', popupDefence);
 
-      // Track viewport bbox for IMD queries (only at zoom >= 9 where bbox is small enough)
+      // Track viewport bbox for IMD + risk queries — debounced to avoid
+      // firing 7+ requests on every intermediate pan/zoom position.
+      let bboxTimer: ReturnType<typeof setTimeout> | null = null;
       const updateBbox = () => {
         const zoom = map.getZoom();
         setMapZoom(zoom);
-        const b = map.getBounds();
-        const bboxStr = `${b.getWest().toFixed(2)},${b.getSouth().toFixed(2)},${b.getEast().toFixed(2)},${b.getNorth().toFixed(2)}`;
-
-        // IMD: zoom >= 9
-        setMapBbox(zoom >= 9 ? bboxStr : null);
-        // Risk polygon layers: zoom >= 7
-        setRiskBbox(zoom >= 7 ? bboxStr : null);
+        if (bboxTimer) clearTimeout(bboxTimer);
+        bboxTimer = setTimeout(() => {
+          const b = map.getBounds();
+          const bboxStr = `${b.getWest().toFixed(2)},${b.getSouth().toFixed(2)},${b.getEast().toFixed(2)},${b.getNorth().toFixed(2)}`;
+          setMapBbox(zoom >= 9 ? bboxStr : null);
+          setRiskBbox(zoom >= 7 ? bboxStr : null);
+        }, 400);
       };
       map.on('moveend', updateBbox);
       updateBbox();
